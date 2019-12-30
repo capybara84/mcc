@@ -33,9 +33,9 @@ void print_ident(void)
 char *intern(const char *s)
 {
     IDENT *id = s_ident_top;
-
+/*
     print_ident();
-
+*/
     for (; id != NULL; id = id->next)
         if (strcmp(id->id, s) == 0)
             return id->id;
@@ -115,8 +115,9 @@ static int next_char(SCANNER *scan)
         scan->line++;
     scan->ch = scan->source[scan->pos++];
 
-printf("%s(%d):next_char: '%c'\n", scan->filename, scan->line, scan->ch);
-
+/*
+    printf("%s(%d):next_char: '%c'\n", scan->filename, scan->line, scan->ch);
+*/
     return scan->ch;
 }
 
@@ -131,6 +132,10 @@ static TOKEN scan_id(SCANNER *scan)
     }
     buffer[i] = '\0';
     /*TODO keywords */
+    if (strcmp(buffer, "static") == 0) return TK_STATIC;
+    if (strcmp(buffer, "extern") == 0) return TK_EXTERN;
+    if (strcmp(buffer, "void") == 0) return TK_VOID;
+    if (strcmp(buffer, "int") == 0) return TK_INT;
     scan->id = intern(buffer);
     return TK_ID;
 }
@@ -161,6 +166,15 @@ TOKEN next_token(SCANNER *scan)
             return scan_id(scan);
         if (isdigit(scan->ch))
             return scan_num(scan);
+        switch (scan->ch) {
+        case ';':   next_char(scan);    return TK_SEMI;
+        case '(':   next_char(scan);    return TK_LPAR;
+        case ')':   next_char(scan);    return TK_RPAR;
+        case '{':   next_char(scan);    return TK_BEGIN;
+        case '}':   next_char(scan);    return TK_END;
+        case '*':   next_char(scan);    return TK_STAR;
+        default:    break;
+        }
         error(scan->filename, scan->line,
             (isprint(scan->ch) ? "illegal character '%c'"
                               : "illegal character (code=%02d)"), scan->ch);
@@ -174,6 +188,16 @@ const char *token_to_string(TOKEN tk)
     case TK_EOF:        return "<EOF>";
     case TK_ID:         return "<ID>";
     case TK_INT_LIT:    return "<INT LIT>";
+    case TK_STATIC:     return "static";
+    case TK_EXTERN:     return "extern";
+    case TK_VOID:       return "void";
+    case TK_INT:        return "int";
+    case TK_SEMI:       return ";";
+    case TK_LPAR:       return "(";
+    case TK_RPAR:       return ")";
+    case TK_BEGIN:      return "{";
+    case TK_END:        return "}";
+    case TK_STAR:       return "*";
     }
     return "";
 }

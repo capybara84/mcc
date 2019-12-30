@@ -1,0 +1,26 @@
+
+translation_unit
+    = {external_declaration}
+
+external_declaration
+    = declaration_specifiers declarator ';'
+    | declaration_specifiers declarator compound_statement
+
+declaration_specifiers
+    = declaration_specifier {declaration_specifier}
+
+declaration_specifier
+	= storage_class_specifier | type_specifier
+
+storage_class_specifier
+    = STATIC | EXTERN
+
+type_specifier
+	= VOID | INT
+
+declarator
+	= {'*'} (IDENTIFIER | '(' declarator ')') ['(' ')']
+
+compound_statement
+	= '{' '}'
+

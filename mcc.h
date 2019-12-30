@@ -24,6 +24,9 @@ void term_symtab(void);
 
 typedef enum {
     TK_EOF, TK_ID, TK_INT_LIT,
+    TK_STATIC, TK_EXTERN, TK_VOID, TK_INT,
+    TK_SEMI, TK_LPAR, TK_RPAR, TK_BEGIN, TK_END,
+    TK_STAR,
 } TOKEN;
 
 typedef struct {

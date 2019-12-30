@@ -2,7 +2,19 @@
 
 static int compile_file(const char *filename)
 {
-    return 1;
+    PARSER *pars;
+    NODE *np;
+
+    pars = open_parser(filename);
+    if (pars == NULL) {
+        fprintf(stderr, "can't open '%s'\n", filename);
+        return 1;
+    }
+    np = parse(pars);
+    close_parser(pars);
+    if (!compile_node(np))
+        return 1;
+    return 0;
 }
 
 static void show_help(void)

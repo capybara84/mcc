@@ -23,18 +23,18 @@ char* new_ident(const char *s)
 
 void print_ident(void)
 {
-    IDENT *id = s_ident_top;
-    for (; id != NULL; id = id->next)
-        printf("%p:%s\n", id, id->id);
+    IDENT *id;
+    printf("print ident [\n");
+    for (id = s_ident_top; id != NULL; id = id->next)
+        printf(" %p:%s\n", id, id->id);
+    printf("]\n");
 }
 
 char *intern(const char *s)
 {
     IDENT *id = s_ident_top;
 
-/*
     print_ident();
-*/
 
     for (; id != NULL; id = id->next)
         if (strcmp(id->id, s) == 0)
@@ -88,6 +88,7 @@ bool close_scanner(SCANNER *s)
 {
     if (s == NULL)
         return false;
+    print_ident();
     free(s);
     return true;
 }
@@ -166,3 +167,29 @@ TOKEN next_token(SCANNER *scan)
         next_char(scan);
     }
 }
+
+const char *token_to_string(TOKEN tk)
+{
+    switch (tk) {
+    case TK_EOF:        return "<EOF>";
+    case TK_ID:         return "<ID>";
+    case TK_INT_LIT:    return "<INT LIT>";
+    }
+    return "";
+}
+
+const char *scan_token_to_string(SCANNER *scan, TOKEN tk)
+{
+    static char buffer[MAX_BUFFER+1];
+    switch (tk) {
+    case TK_ID:
+        return scan->id;
+    case TK_INT_LIT:
+        sprintf(buffer, "%d", scan->num);
+        return buffer;
+    default:
+        break;
+    }
+    return token_to_string(tk);
+}
+

@@ -3,6 +3,20 @@
 #define COUNT_OF(array) (sizeof (array) / sizeof (array[0]))
 
 #ifdef NDEBUG
+# define ENTER(fn)      ((void) 0)
+# define LEAVE(fn)      ((void) 0)
+# define TRACE(fn)      ((void) 0)
+#else
+static int s_indent = 0;
+# define ENTER(fn)  \
+        if (is_verbose_level(3)) printf("%*sENTER %s\n", s_indent++, "", (fn))
+# define LEAVE(fn)  \
+        if (is_verbose_level(3)) printf("%*sLEAVE %s\n", --s_indent, "", (fn))
+# define TRACE(fn)  \
+        if (is_verbose_level(3)) printf("%*sTRACE %s\n", s_indent, "", (fn))
+#endif
+
+#ifdef NDEBUG
 #define next(pars)  ((pars)->token = next_token((pars)->scan))
 #else
 static TOKEN next(PARSER *pars)
@@ -90,7 +104,10 @@ compound_statement
 */
 static void parse_compound_statement(PARSER *pars)
 {
-
+    ENTER("parse_compound_statement");
+    next(pars); /* skip '{' */
+    expect(pars, TK_END);
+    LEAVE("parse_compound_statement");
 }
 
 /*
@@ -99,6 +116,7 @@ declarator
 */
 static void parse_declarator(PARSER *pars)
 {
+    ENTER("parse_declarator");
     while (pars->token == TK_STAR) {
         next(pars);
     }
@@ -114,6 +132,7 @@ static void parse_declarator(PARSER *pars)
         next(pars);
         expect(pars, TK_RPAR);
     }
+    LEAVE("parse_declarator");
 }
 
 /*
@@ -126,6 +145,7 @@ type_specifier
 */
 static void parse_declaration_specifier(PARSER *pars)
 {
+    ENTER("parse_declaration_specifier");
     switch (pars->token) {
     case TK_STATIC:
     case TK_EXTERN:
@@ -136,6 +156,7 @@ static void parse_declaration_specifier(PARSER *pars)
     default:
         parser_error(pars, "syntax error");
     }
+    LEAVE("parse_declaration_specifier");
 }
 
 
@@ -145,10 +166,12 @@ declaration_specifiers
 */
 static void parse_declaration_specifiers(PARSER *pars)
 {
+    ENTER("parse_declaration_specifiers");
     parse_declaration_specifier(pars);
     while (is_declaration_specifier(pars)) {
         parse_declaration_specifier(pars);
     }
+    LEAVE("parse_declaration_specifiers");
 }
 
 /*
@@ -158,6 +181,7 @@ external_declaration
 */
 static void parse_external_delaration(PARSER *pars)
 {
+    ENTER("parse_external_delaration");
     parse_declaration_specifiers(pars);
     parse_declarator(pars);
     if (pars->token == TK_SEMI) {
@@ -166,6 +190,7 @@ static void parse_external_delaration(PARSER *pars)
         parse_compound_statement(pars);
     } else
         parser_error(pars, "syntax error");
+    LEAVE("parse_external_delaration");
 }
 
 /*
@@ -176,6 +201,7 @@ NODE *parse(PARSER *pars)
 {
     NODE *np = NULL;
 
+    next(pars);
     while (pars->token != TK_EOF) {
         parse_external_delaration(pars);
     }

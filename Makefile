@@ -3,13 +3,19 @@ CFLAGS=-Wall
 mcc : main.o gen.o parser.o scanner.o symbol.o misc.o
 	$(CC) $(CFLAGS) -o $@ $^
 
-test: scanner_test
+test: scanner_test parser_test
 
 test_scanner : test_scanner.o scanner.o symbol.o misc.o
 	$(CC) $(CFLAGS) -o $@ $^
 
 scanner_test : test_scanner
 	./test_scanner
+
+test_parser : test_parser.o parser.o gen.o scanner.o symbol.o misc.o
+	$(CC) $(CFLAGS) -o $@ $^
+
+parser_test : test_parser
+	./test_parser
 
 clean:
 	rm -f mcc *.o

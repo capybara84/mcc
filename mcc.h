@@ -67,6 +67,7 @@ PARSER *open_parser(const char *filename);
 bool close_parser(PARSER *pars);
 NODE *parse(PARSER *pars);
 
+void print_node(NODE *np);
 bool compile_node(NODE *np);
 
 #endif

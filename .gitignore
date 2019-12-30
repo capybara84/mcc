@@ -1,3 +1,4 @@
 *.o
 mcc
 test_scanner
+test_parser

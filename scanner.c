@@ -88,7 +88,9 @@ bool close_scanner(SCANNER *s)
 {
     if (s == NULL)
         return false;
+/*
     print_ident();
+*/
     free(s);
     return true;
 }

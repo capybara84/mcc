@@ -126,23 +126,42 @@ static void parse_declarator(PARSER *pars, TYPE **pptyp, char **id)
     assert(id);
 
     while (pars->token == TK_STAR) {
+        *pptyp = new_type(T_POINTER, (*pptyp)->sclass, *pptyp);
         next(pars);
     }
     if (pars->token == TK_ID) {
         *id = pars->scan->id;
         next(pars);
     } else if (pars->token == TK_LPAR) {
-        typ = new_type(T_UNKNOWN, NULL);
+        typ = new_type(T_UNKNOWN, SC_DEFAULT, NULL);
         next(pars);
         parse_declarator(pars, &typ, id);
         expect(pars, TK_RPAR);
-    } else
+    } else {
         parser_error(pars, "syntax error");
+    }
     if (pars->token == TK_LPAR) {
         next(pars);
         expect(pars, TK_RPAR);
-        *pptyp = new_type(T_FUNC, *pptyp);
-        /*TODO typ */
+        *pptyp = new_type(T_FUNC, (*pptyp)->sclass, *pptyp);
+        if (typ) {
+            TYPE *p = typ;
+            while (p && p->type && p->type->kind != T_UNKNOWN)
+                p = p->type;
+            if (p->type) {
+                if (p->type->kind == T_UNKNOWN) {
+                    p->type = *pptyp;
+                    *pptyp = typ;
+                } else {
+                    assert(0);
+                }
+            } else {
+                assert(0);
+            }
+        }
+    } else if (typ) {
+        /*TODO*/
+        parser_error(pars, "syntax error");
     }
     LEAVE("parse_declarator");
 }
@@ -168,6 +187,7 @@ static void parse_declaration_specifier(PARSER *pars, TYPE *typ)
     case TK_EXTERN:
         if (typ->sclass != SC_DEFAULT)
             parser_error(pars, "invalid 'extern'");
+        typ->sclass = SC_EXTERN;
         next(pars);
         break;
     case TK_VOID:
@@ -215,7 +235,7 @@ static void parse_external_delaration(PARSER *pars)
 
     ENTER("parse_external_delaration");
 
-    typ = new_type(T_UNKNOWN, NULL);
+    typ = new_type(T_UNKNOWN, SC_DEFAULT, NULL);
     parse_declaration_specifiers(pars, typ);
 
     parse_declarator(pars, &typ, &id);

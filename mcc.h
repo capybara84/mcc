@@ -29,12 +29,12 @@ typedef enum {
 
 typedef struct type TYPE;
 struct type {
-    STORAGE_CLASS sclass;
     TYPE_KIND kind;
+    STORAGE_CLASS sclass;
     TYPE *type;
 };
 
-TYPE *new_type(TYPE_KIND kind, TYPE *typ);
+TYPE *new_type(TYPE_KIND kind, STORAGE_CLASS sclass, TYPE *typ);
 
 void print_type(const TYPE *typ);
 

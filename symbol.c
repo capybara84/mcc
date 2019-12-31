@@ -1,13 +1,10 @@
 #include "mcc.h"
 
-TYPE type_void = { SC_DEFAULT, T_VOID, NULL };
-TYPE type_int = { SC_DEFAULT, T_INT, NULL };
-
-TYPE *new_type(TYPE_KIND kind, TYPE *ref_typ)
+TYPE *new_type(TYPE_KIND kind, STORAGE_CLASS sclass, TYPE *ref_typ)
 {
     TYPE *typ = (TYPE*) alloc(sizeof (TYPE));
-    typ->sclass = SC_DEFAULT;
     typ->kind = kind;
+    typ->sclass = sclass;
     typ->type = ref_typ;
     return typ;
 }
@@ -27,12 +24,13 @@ static void print_storage_class(STORAGE_CLASS sc)
     }
 }
 
-void print_type(const TYPE *typ)
+static void print_type_sclass(const TYPE *typ, bool sclass)
 {
     if (typ == NULL)
         printf("NULL");
     else {
-        print_storage_class(typ->sclass);
+        if (sclass)
+            print_storage_class(typ->sclass);
         switch (typ->kind) {
         case T_UNKNOWN:
             printf("UNKNOWN ");
@@ -45,15 +43,20 @@ void print_type(const TYPE *typ)
             break;
         case T_POINTER:
             printf("POINTER to ");
-            print_type(typ->type);
+            print_type_sclass(typ->type, false);
             break;
         case T_FUNC:
-            printf("FUNC ");
-            print_type(typ->type);
-            printf("PARAM ()\n");
+            printf("FUNC <");
+            print_type_sclass(typ->type, true);
+            printf("> PARAM () ");
             break;
         }
     }
+}
+
+void print_type(const TYPE *typ)
+{
+    print_type_sclass(typ, true);
 }
 
 bool init_symtab(void)

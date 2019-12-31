@@ -12,6 +12,10 @@ const char *tests[] =
     "void *ptr;",
     "int (*pfn)();",
     "int (**ppfn)();",
+    "static int **p;",
+    "int (*p)();",
+    "int **(**p)();",
+    "int (*p);",
 };
 #define N_TESTS (sizeof (tests) / sizeof (tests[0]))
 

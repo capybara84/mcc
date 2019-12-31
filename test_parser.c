@@ -1,32 +1,38 @@
 #include "mcc.h"
 
-const char *source =
-"int a;\n"
-"void foo();\n"
-"int bar() {}\n"
-"static int b;\n"
-"extern void baz();\n"
-"int *p;\n"
-"int **pp;\n"
-"void *ptr;\n"
-"int (*pfn)();\n"
-"int (**ppfn)();\n"
-;
-
+const char *tests[] =
+{
+    "int a;",
+    "void foo();",
+    "int bar() {}",
+    "static int b;",
+    "extern void baz();",
+    "int *p;",
+    "int **pp;",
+    "void *ptr;",
+    "int (*pfn)();",
+    "int (**ppfn)();",
+};
+#define N_TESTS (sizeof (tests) / sizeof (tests[0]))
 
 int main(void)
 {
+    int i;
     PARSER *pars;
     NODE *np;
 
     set_verbose_level(3);
     init_symtab();
-    pars = open_parser_text("test", source);
-    if (pars == NULL)
-        return 1;
-    np = parse(pars);
-    close_parser(pars);
-    print_node(np);
+    for (i = 0; i < N_TESTS; i++) {
+        printf("-----------------\n");
+        printf("test %d: %s\n", i, tests[i]);
+        pars = open_parser_text("text", tests[i]);
+        if (pars == NULL)
+            return 1;
+        np = parse(pars);
+        close_parser(pars);
+        print_node(np);
+    }
     term_symtab();
     return 0;
 }

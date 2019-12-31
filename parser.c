@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "mcc.h"
 
 #define COUNT_OF(array) (sizeof (array) / sizeof (array[0]))
@@ -114,23 +115,34 @@ static void parse_compound_statement(PARSER *pars)
 declarator
 	= {'*'} (IDENTIFIER | '(' declarator ')') ['(' ')']
 */
-static void parse_declarator(PARSER *pars)
+static void parse_declarator(PARSER *pars, TYPE **pptyp, char **id)
 {
+    TYPE *typ = NULL;
+
     ENTER("parse_declarator");
+
+    assert(pptyp);
+    assert(*pptyp);
+    assert(id);
+
     while (pars->token == TK_STAR) {
         next(pars);
     }
     if (pars->token == TK_ID) {
+        *id = pars->scan->id;
         next(pars);
     } else if (pars->token == TK_LPAR) {
+        typ = new_type(T_UNKNOWN, NULL);
         next(pars);
-        parse_declarator(pars);
+        parse_declarator(pars, &typ, id);
         expect(pars, TK_RPAR);
     } else
         parser_error(pars, "syntax error");
     if (pars->token == TK_LPAR) {
         next(pars);
         expect(pars, TK_RPAR);
+        *pptyp = new_type(T_FUNC, *pptyp);
+        /*TODO typ */
     }
     LEAVE("parse_declarator");
 }
@@ -143,14 +155,31 @@ storage_class_specifier
 type_specifier
 	= VOID | INT
 */
-static void parse_declaration_specifier(PARSER *pars)
+static void parse_declaration_specifier(PARSER *pars, TYPE *typ)
 {
     ENTER("parse_declaration_specifier");
     switch (pars->token) {
     case TK_STATIC:
+        if (typ->sclass != SC_DEFAULT)
+            parser_error(pars, "invalid 'static'");
+        typ->sclass = SC_STATIC;
+        next(pars);
+        break;
     case TK_EXTERN:
+        if (typ->sclass != SC_DEFAULT)
+            parser_error(pars, "invalid 'extern'");
+        next(pars);
+        break;
     case TK_VOID:
+        if (typ->kind != T_UNKNOWN)
+            parser_error(pars, "cannot combine 'void'");
+        typ->kind = T_VOID;
+        next(pars);
+        break;
     case TK_INT:
+        if (typ->kind != T_UNKNOWN)
+            parser_error(pars, "cannot combine 'int'");
+        typ->kind = T_INT;
         next(pars);
         break;
     default:
@@ -164,12 +193,12 @@ static void parse_declaration_specifier(PARSER *pars)
 declaration_specifiers
     = declaration_specifier {declaration_specifier}
 */
-static void parse_declaration_specifiers(PARSER *pars)
+static void parse_declaration_specifiers(PARSER *pars, TYPE *typ)
 {
     ENTER("parse_declaration_specifiers");
-    parse_declaration_specifier(pars);
+    parse_declaration_specifier(pars, typ);
     while (is_declaration_specifier(pars)) {
-        parse_declaration_specifier(pars);
+        parse_declaration_specifier(pars, typ);
     }
     LEAVE("parse_declaration_specifiers");
 }
@@ -181,9 +210,20 @@ external_declaration
 */
 static void parse_external_delaration(PARSER *pars)
 {
+    TYPE *typ;
+    char *id;
+
     ENTER("parse_external_delaration");
-    parse_declaration_specifiers(pars);
-    parse_declarator(pars);
+
+    typ = new_type(T_UNKNOWN, NULL);
+    parse_declaration_specifiers(pars, typ);
+
+    parse_declarator(pars, &typ, &id);
+
+printf("id: %s type: ", id);
+print_type(typ);
+printf("\n");
+
     if (pars->token == TK_SEMI) {
         next(pars);
     } else if (pars->token == TK_BEGIN) {

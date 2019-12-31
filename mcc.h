@@ -19,6 +19,25 @@ void *alloc(size_t size);
 void verror(const char *filename, int line, const char *s, va_list arg);
 void error(const char *filename, int line, const char *s, ...);
 
+typedef enum {
+    SC_DEFAULT, SC_STATIC, SC_EXTERN
+} STORAGE_CLASS;
+
+typedef enum {
+    T_UNKNOWN, T_VOID, T_INT, T_POINTER, T_FUNC,
+} TYPE_KIND;
+
+typedef struct type TYPE;
+struct type {
+    STORAGE_CLASS sclass;
+    TYPE_KIND kind;
+    TYPE *type;
+};
+
+TYPE *new_type(TYPE_KIND kind, TYPE *typ);
+
+void print_type(const TYPE *typ);
+
 bool init_symtab(void);
 void term_symtab(void);
 

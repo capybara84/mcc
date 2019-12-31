@@ -3,7 +3,14 @@
 const char *source =
 "int a;\n"
 "void foo();\n"
-"void bar() {}\n"
+"int bar() {}\n"
+"static int b;\n"
+"extern void baz();\n"
+"int *p;\n"
+"int **pp;\n"
+"void *ptr;\n"
+"int (*pfn)();\n"
+"int (**ppfn)();\n"
 ;
 
 

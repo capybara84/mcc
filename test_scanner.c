@@ -3,7 +3,7 @@
 const char *source =
 "abc 123\n"
 "static extern void int\n"
-"; ( ) { } *\n";
+"; ( ) { } * :\n";
 
 TOKEN tokens[] =
     { TK_ID, TK_INT_LIT, TK_STATIC, TK_EXTERN, TK_VOID, TK_INT,
@@ -20,6 +20,11 @@ int main(void)
     scan = open_scanner_text("test", source);
     if (scan == NULL)
         return 1;
+    if (setjmp(g_error_jmp_buf) != 0) {
+        close_scanner(scan);
+        term_symtab();
+        return 1;
+    }
     i = 0;
     while ((tk = next_token(scan)) != TK_EOF) {
 /*

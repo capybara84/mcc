@@ -59,7 +59,10 @@ bool close_parser(PARSER *pars)
 {
     if (pars == NULL)
         return false;
-    return close_scanner(pars->scan);
+    if (!close_scanner(pars->scan))
+        return false;
+    free(pars);
+    return true;
 }
 
 static void parser_error(PARSER *pars, const char *s, ...)

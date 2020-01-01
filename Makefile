@@ -9,13 +9,13 @@ test_scanner : test_scanner.o scanner.o symbol.o misc.o
 	$(CC) $(CFLAGS) -o $@ $^
 
 scanner_test : test_scanner
-	./test_scanner
+	-./test_scanner
 
 test_parser : test_parser.o gen.o node.o parser.o scanner.o symbol.o misc.o
 	$(CC) $(CFLAGS) -o $@ $^
 
 parser_test : test_parser
-	./test_parser
+	-./test_parser
 
 clean:
 	rm -f mcc *.o

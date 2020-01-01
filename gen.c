@@ -1,7 +1,7 @@
 #include "mcc.h"
 
 
-bool compile_node(NODE *np)
+bool compile(NODE *np)
 {
     return true;
 }

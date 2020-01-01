@@ -14,6 +14,7 @@ const char *tests[] =
     "int (**ppfn)();",
     "static int **p;",
     "int (*p)();",
+    "int (*pp);",
     "int **(**p)();",
     "int a;\n"
     "void foo();\n"
@@ -26,6 +27,7 @@ int main(void)
     int i;
     PARSER *pars;
     NODE *np;
+    int result = 0;
 
 /*
     set_verbose_level(3);
@@ -37,10 +39,16 @@ int main(void)
         pars = open_parser_text("text", tests[i]);
         if (pars == NULL)
             return 1;
-        np = parse(pars);
-        close_parser(pars);
-        print_node(np);
+        if (setjmp(g_error_jmp_buf) != 0) {
+            close_parser(pars);
+            result++;
+        } else {
+            np = parse(pars);
+            close_parser(pars);
+            print_node(np);
+        }
     }
     term_symtab();
-    return 0;
+    printf("result = %d\n", result);
+    return result;
 }

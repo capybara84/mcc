@@ -10,9 +10,13 @@ static int compile_file(const char *filename)
         fprintf(stderr, "can't open '%s'\n", filename);
         return 1;
     }
+    if (setjmp(g_error_jmp_buf) != 0) {
+        close_parser(pars);
+        return 1;
+    }
     np = parse(pars);
     close_parser(pars);
-    if (!compile_node(np))
+    if (!compile(np))
         return 1;
     return 0;
 }

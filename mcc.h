@@ -7,10 +7,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <setjmp.h>
 
 typedef int bool;
 #define true    1
 #define false   0
+
+extern jmp_buf g_error_jmp_buf;
 
 bool is_verbose_level(int n);
 void set_verbose_level(int n);
@@ -126,6 +129,6 @@ PARSER *open_parser(const char *filename);
 bool close_parser(PARSER *pars);
 NODE *parse(PARSER *pars);
 
-bool compile_node(NODE *np);
+bool compile(NODE *np);
 
 #endif

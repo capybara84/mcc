@@ -1,5 +1,7 @@
 #include "mcc.h"
 
+jmp_buf g_error_jmp_buf;
+
 static int s_verbose_level = 0;
 
 bool is_verbose_level(int n)
@@ -27,6 +29,7 @@ void verror(const char *filename, int line, const char *s, va_list ap)
     fprintf(stderr, "%s(%d):Error:", filename, line);
     vfprintf(stderr, s, ap);
     fprintf(stderr, "\n");
+    longjmp(g_error_jmp_buf, 1);
 }
 
 void error(const char *filename, int line, const char *s, ...)

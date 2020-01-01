@@ -161,7 +161,7 @@ static void parse_declarator(PARSER *pars, TYPE **pptyp, char **id)
         }
     } else if (typ) {
         /*TODO*/
-        parser_error(pars, "syntax error");
+        parser_error(pars, "syntax error (mcc)");
     }
     LEAVE("parse_declarator");
 }

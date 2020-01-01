@@ -1,5 +1,9 @@
 #include "mcc.h"
 
+static SYMTAB *global_table = NULL;
+static SYMTAB *current_symtab = NULL;
+
+
 TYPE *new_type(TYPE_KIND kind, STORAGE_CLASS sclass, TYPE *ref_typ)
 {
     TYPE *typ = (TYPE*) alloc(sizeof (TYPE));
@@ -13,7 +17,9 @@ static void print_storage_class(STORAGE_CLASS sc)
 {
     switch (sc) {
     case SC_DEFAULT:
+/*
         printf("default ");
+*/
         break;
     case SC_STATIC:
         printf("static ");
@@ -59,8 +65,29 @@ void print_type(const TYPE *typ)
     print_type_sclass(typ, true);
 }
 
+
+SYMBOL *new_symbol(SYMBOL_KIND kind, char *id, TYPE *type)
+{
+    SYMBOL *p = (SYMBOL*) alloc(sizeof (SYMBOL));
+    p->next = NULL;
+    p->kind = kind;
+    p->id = id;
+    p->type = type;
+    return p;
+}
+
+SYMTAB *new_symtab(SYMTAB *up)
+{
+    SYMTAB *tab = (SYMTAB*) alloc(sizeof (SYMTAB));
+    tab->sym = NULL;
+    tab->up = up;
+    return tab;
+}
+
 bool init_symtab(void)
 {
+    global_table = new_symtab(NULL);
+    current_symtab = global_table;
     return true;
 }
 

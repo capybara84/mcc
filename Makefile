@@ -1,6 +1,6 @@
 CFLAGS=-Wall
 
-mcc : main.o gen.o parser.o scanner.o symbol.o misc.o
+mcc : main.o gen.o node.o parser.o scanner.o symbol.o misc.o
 	$(CC) $(CFLAGS) -o $@ $^
 
 test: scanner_test parser_test
@@ -11,7 +11,7 @@ test_scanner : test_scanner.o scanner.o symbol.o misc.o
 scanner_test : test_scanner
 	./test_scanner
 
-test_parser : test_parser.o parser.o gen.o scanner.o symbol.o misc.o
+test_parser : test_parser.o gen.o node.o parser.o scanner.o symbol.o misc.o
 	$(CC) $(CFLAGS) -o $@ $^
 
 parser_test : test_parser
@@ -22,6 +22,7 @@ clean:
 
 main.o : mcc.h
 gen.o : mcc.h
+node.o : mcc.h
 parser.o : mcc.h
 scanner.o : mcc.h
 symbol.o : mcc.h

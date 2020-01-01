@@ -15,7 +15,9 @@ const char *tests[] =
     "static int **p;",
     "int (*p)();",
     "int **(**p)();",
-    "int (*p);",
+    "int a;\n"
+    "void foo();\n"
+    "int b;",
 };
 #define N_TESTS (sizeof (tests) / sizeof (tests[0]))
 
@@ -25,7 +27,9 @@ int main(void)
     PARSER *pars;
     NODE *np;
 
+/*
     set_verbose_level(3);
+*/
     init_symtab();
     for (i = 0; i < N_TESTS; i++) {
         printf("-----------------\n");

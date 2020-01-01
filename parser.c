@@ -228,8 +228,10 @@ external_declaration
     = declaration_specifiers declarator ';'
     | declaration_specifiers declarator compound_statement
 */
-static void parse_external_delaration(PARSER *pars)
+static NODE *parse_external_delaration(PARSER *pars)
 {
+    SYMBOL *sym;
+    NODE *np;
     TYPE *typ;
     char *id;
 
@@ -240,17 +242,21 @@ static void parse_external_delaration(PARSER *pars)
 
     parse_declarator(pars, &typ, &id);
 
-printf("id: %s type: ", id);
-print_type(typ);
-printf("\n");
-
     if (pars->token == TK_SEMI) {
+        bool isfunc = typ->kind == T_FUNC;
+        sym = new_symbol(isfunc ? SK_FUNC : SK_VAR, id, typ);
+        np = new_node_sym(isfunc ? NK_FUNC_DECL : NK_VAR_DECL, sym, typ);
         next(pars);
     } else if (pars->token == TK_BEGIN) {
+        sym = new_symbol(SK_FUNC, id, typ);
+        np = new_node_sym(NK_FUNC_DECL, sym, typ);
         parse_compound_statement(pars);
-    } else
+    } else {
+        np = NULL;
         parser_error(pars, "syntax error");
+    }
     LEAVE("parse_external_delaration");
+    return np;
 }
 
 /*
@@ -263,7 +269,8 @@ NODE *parse(PARSER *pars)
 
     next(pars);
     while (pars->token != TK_EOF) {
-        parse_external_delaration(pars);
+        NODE *n = parse_external_delaration(pars);
+        np = node_link(NK_DECL_LINK, np, n);
     }
     return np;
 }

@@ -27,3 +27,6 @@ parser.o : mcc.h
 scanner.o : mcc.h
 symbol.o : mcc.h
 misc.o : mcc.h
+
+test_scanner.o : mcc.h
+test_parser.o : mcc.h

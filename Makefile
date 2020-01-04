@@ -18,7 +18,7 @@ parser_test : test_parser
 	-./test_parser
 
 clean:
-	rm -f mcc *.o
+	rm -f mcc test_scanner test_parser *.o
 
 main.o : mcc.h
 gen.o : mcc.h

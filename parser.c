@@ -101,6 +101,39 @@ static bool is_declaration_specifier(PARSER *pars)
     return is_token_begin_with(pars, begin_with, COUNT_OF(begin_with));
 }
 
+static bool is_declaration(PARSER *pars)
+{
+    return is_declaration_specifier(pars);
+}
+
+static bool is_expression(PARSER *pars)
+{
+    static TOKEN begin_with[] = { TK_AND, TK_STAR, TK_MINUS, TK_NOT, TK_ID,
+                    TK_INT_LIT, TK_LPAR};
+    return is_token_begin_with(pars, begin_with, COUNT_OF(begin_with));
+}
+
+static bool is_statement(PARSER *pars)
+{
+    static TOKEN begin_with[] = { TK_BEGIN, TK_IF, TK_WHILE, TK_FOR,
+            TK_WHILE, TK_FOR, TK_CONTINUE, TK_BREAK, TK_RETURN };
+    if (is_expression(pars))
+        return true;
+    return is_token_begin_with(pars, begin_with, COUNT_OF(begin_with));
+}
+
+
+/*
+expression
+	= assignment_expression
+*/
+static void parse_expression(PARSER *pars)
+{
+    /*TODO*/
+}
+
+static void parse_declaration(PARSER *pars);
+static void parse_statement(PARSER *pars);
 
 /*
 compound_statement
@@ -110,8 +143,102 @@ static void parse_compound_statement(PARSER *pars)
 {
     ENTER("parse_compound_statement");
     next(pars); /* skip '{' */
+    while (is_declaration(pars))
+        parse_declaration(pars);
+    while (is_statement(pars))
+        parse_statement(pars);
     expect(pars, TK_END);
     LEAVE("parse_compound_statement");
+}
+
+/*
+statement
+	= expression_statement
+	| compound_statement
+	| selection_statement
+	| iteration_statement
+	| jump_statement
+
+expression_statement
+	= [expression] ';'
+
+compound_statement
+	= '{' [declaration_list] {statement} '}'
+
+selection_statement
+	= IF '(' expression ')' statement
+	| IF '(' expression ')' statement ELSE statement
+
+iteration_statement
+	= WHILE '(' expression ')' statement
+	| FOR '(' [expression] ';' [expression] ';' [expression] ')'
+		statement
+
+jump_statement
+	= CONTINUE ';'
+	| BREAK ';'
+	| RETURN [expression] ';'
+
+*/
+static void parse_statement(PARSER *pars)
+{
+    ENTER("parse_statement");
+    switch (pars->token) {
+    case TK_BEGIN:
+        parse_compound_statement(pars);
+        break;
+    case TK_IF:
+        next(pars);
+        expect(pars, TK_LPAR);
+        parse_expression(pars);
+        expect(pars, TK_RPAR);
+        parse_statement(pars);
+        if (pars->token == TK_ELSE) {
+            next(pars);
+            parse_statement(pars);
+        }
+        break;
+    case TK_WHILE:
+        next(pars);
+        expect(pars, TK_LPAR);
+        parse_expression(pars);
+        expect(pars, TK_RPAR);
+        parse_statement(pars);
+        break;
+    case TK_FOR:
+        next(pars);
+        expect(pars, TK_LPAR);
+        if (is_expression(pars))
+            parse_expression(pars);
+        expect(pars, TK_SEMI);
+        if (is_expression(pars))
+            parse_expression(pars);
+        expect(pars, TK_SEMI);
+        if (is_expression(pars))
+            parse_expression(pars);
+        expect(pars, TK_RPAR);
+        parse_statement(pars);
+        break;
+    case TK_CONTINUE:
+        next(pars);
+        expect(pars, TK_SEMI);
+        break;
+    case TK_BREAK:
+        next(pars);
+        expect(pars, TK_SEMI);
+        break;
+    case TK_RETURN:
+        next(pars);
+        if (is_expression(pars))
+            parse_expression(pars);
+        expect(pars, TK_SEMI);
+        break;
+    default:
+        parse_expression(pars);
+        expect(pars, TK_SEMI);
+        break;
+    }
+    LEAVE("parse_statement");
 }
 
 /*
@@ -224,6 +351,11 @@ static void parse_declaration_specifiers(PARSER *pars, TYPE *typ)
         parse_declaration_specifier(pars, typ);
     }
     LEAVE("parse_declaration_specifiers");
+}
+
+static void parse_declaration(PARSER *pars)
+{
+    /*TODO*/
 }
 
 /*

@@ -14,15 +14,14 @@ const char *tests[] =
     "int (**ppfn)();",
     "static int **p;",
     "int (*p)();",
-    "int (*pp);",
     "int **(**p)();",
     "int a;\n"
     "void foo();\n"
-    "int b;",
+    "int b;"
 };
 #define N_TESTS (sizeof (tests) / sizeof (tests[0]))
 
-int main(void)
+int parse_test(void)
 {
     int i;
     PARSER *pars;
@@ -51,4 +50,9 @@ int main(void)
     term_symtab();
     printf("result = %d\n", result);
     return result;
+}
+
+int main(void)
+{
+    return parse_test();
 }

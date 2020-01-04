@@ -572,6 +572,8 @@ static void parse_declaration_specifiers(PARSER *pars, TYPE *typ)
 /*
 declaration
 	= declaration_specifiers [declarator_list] ';'
+declarator_list
+    = declarator {',' declarator}
 */
 static void parse_declaration(PARSER *pars)
 {

@@ -122,6 +122,217 @@ static bool is_statement(PARSER *pars)
     return is_token_begin_with(pars, begin_with, COUNT_OF(begin_with));
 }
 
+static bool is_unary_operator(PARSER *pars)
+{
+    static TOKEN begin_with[] = { TK_AND, TK_STAR, TK_SLASH, TK_INT };
+    if (is_expression(pars))
+        return true;
+    return is_token_begin_with(pars, begin_with, COUNT_OF(begin_with));
+}
+
+
+static void parse_expression(PARSER *pars);
+
+/*
+primary_expression
+    = IDENTIFIER
+    | constant
+    | '(' expression ')'
+constant
+    = INTEGER_CONSTANT
+*/
+static void parse_primary_expression(PARSER *pars)
+{
+    ENTER("parse_primary_expression");
+    switch (pars->token) {
+    case TK_ID:
+        next(pars);
+        break;
+    case TK_INT_LIT:
+        next(pars);
+        break;
+    case TK_LPAR:
+        next(pars);
+        parse_expression(pars);
+        expect(pars, TK_RPAR);
+        break;
+    default:
+        break;
+    }
+    LEAVE("parse_primary_expression");
+}
+
+static void parse_assignment_expression(PARSER *pars);
+
+/*
+argument_expression_list
+    = assignment_expression {',' assignment_expression}
+*/
+static void parse_argument_expression_list(PARSER *pars)
+{
+    ENTER("parse_argument_expression_list");
+    parse_assignment_expression(pars);
+    while (pars->token == TK_COMMA) {
+        next(pars);
+        parse_assignment_expression(pars);
+    }
+    LEAVE("parse_argument_expression_list");
+}
+
+/*
+postfix_expression
+    = primary_expression
+    | postfix_expression '(' [argument_expression_list] ')'
+*/
+static void parse_postfix_expression(PARSER *pars)
+{
+    ENTER("parse_postfix_expression");
+    parse_primary_expression(pars);
+    if (pars->token == TK_LPAR) {
+        next(pars);
+        if (pars->token != TK_RPAR) {
+            parse_argument_expression_list(pars);
+        }
+        expect(pars, TK_RPAR);
+    }
+    LEAVE("parse_postfix_expression");
+}
+
+/*
+unary_expression
+    = postfix_expression
+    | unary_operator cast_expression
+*/
+static void parse_unary_expression(PARSER *pars)
+{
+    ENTER("parse_unary_expression");
+    if (is_unary_operator(pars)) {
+        next(pars);
+    }
+    parse_postfix_expression(pars);
+    LEAVE("parse_unary_expression");
+}
+
+/*
+multiplicative_expression
+	= unary_expression
+	| multiplicative_expression '*' cast_expression
+	| multiplicative_expression '/' cast_expression
+*/
+static void parse_multiplicative_expression(PARSER *pars)
+{
+    ENTER("parse_multiplicative_expression");
+    parse_unary_expression(pars);
+    while (pars->token == TK_STAR || pars->token == TK_SLASH) {
+        next(pars);
+        parse_unary_expression(pars);
+    }
+    LEAVE("parse_multiplicative_expression");
+}
+
+/*
+additive_expression
+	= multiplicative_expression
+	| additive_expression '+' multiplicative_expression
+	| additive_expression '-' multiplicative_expression
+*/
+static void parse_additive_expression(PARSER *pars)
+{
+    ENTER("parse_additive_expression");
+    parse_multiplicative_expression(pars);
+    while (pars->token == TK_PLUS || pars->token == TK_MINUS) {
+        next(pars);
+        parse_multiplicative_expression(pars);
+    }
+    LEAVE("parse_additive_expression");
+}
+
+/*
+relational_expression
+	= additive_expression
+	| relational_expression '<' additive_expression
+	| relational_expression '>' additive_expression
+	| relational_expression '<=' additive_expression
+	| relational_expression '>=' additive_expression
+*/
+static void parse_relational_expression(PARSER *pars)
+{
+    ENTER("parse_relational_expression");
+    parse_additive_expression(pars);
+    while (pars->token == TK_LT || pars->token == TK_GT ||
+            pars->token == TK_LE || pars->token == TK_GE) {
+        next(pars);
+        parse_additive_expression(pars);
+    }
+    LEAVE("parse_relational_expression");
+}
+
+/*
+equality_expression
+	= relational_expression
+	| equality_expression '==' relational_expression
+	| equality_expression '!=' relational_expression
+*/
+static void parse_equality_expression(PARSER *pars)
+{
+    ENTER("parse_equality_expression");
+    parse_relational_expression(pars);
+    while (pars->token == TK_EQ || pars->token == TK_NEQ) {
+        next(pars);
+        parse_relational_expression(pars);
+    }
+    LEAVE("parse_equality_expression");
+}
+
+/*
+logical_and_expression
+	= equality_expression
+	| logical_and_expression '&&' inclusive_or_expression
+*/
+static void parse_logical_and_expression(PARSER *pars)
+{
+    ENTER("parse_logical_and_expression");
+    parse_equality_expression(pars);
+    while (pars->token == TK_LAND) {
+        next(pars);
+        parse_equality_expression(pars);
+    }
+    LEAVE("parse_logical_and_expression");
+}
+
+/*
+logical_or_expression
+	= logical_and_expression
+	| logical_or_expression '||' logical_and_expression
+*/
+static void parse_logical_or_expression(PARSER *pars)
+{
+    ENTER("parse_logical_or_expression");
+    parse_logical_and_expression(pars);
+    while (pars->token == TK_LOR) {
+        next(pars);
+        parse_logical_and_expression(pars);
+    }
+    LEAVE("parse_logical_or_expression");
+}
+
+
+/*
+assignment_expression
+	= logical_or_expression
+	| unary_expression '=' assignment_expression
+*/
+static void parse_assignment_expression(PARSER *pars)
+{
+    ENTER("parse_assignment_expression");
+    parse_logical_or_expression(pars);
+    if (pars->token == TK_ASSIGN) {
+        /* TODO unary_expression (left value) */
+        next(pars);
+        parse_assignment_expression(pars);
+    }
+    LEAVE("parse_assignment_expression");
+}
 
 /*
 expression
@@ -129,7 +340,9 @@ expression
 */
 static void parse_expression(PARSER *pars)
 {
-    /*TODO*/
+    ENTER("parse_expression");
+    parse_assignment_expression(pars);
+    LEAVE("parse_expression");
 }
 
 static void parse_declaration(PARSER *pars);

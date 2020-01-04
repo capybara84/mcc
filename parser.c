@@ -137,7 +137,9 @@ static void parse_statement(PARSER *pars);
 
 /*
 compound_statement
-	= '{' '}'
+	= '{' [declaration_list] {statement} '}'
+declaration_list
+    = declaration {declaration}
 */
 static void parse_compound_statement(PARSER *pars)
 {
@@ -234,7 +236,8 @@ static void parse_statement(PARSER *pars)
         expect(pars, TK_SEMI);
         break;
     default:
-        parse_expression(pars);
+        if (pars->token != TK_SEMI)
+            parse_expression(pars);
         expect(pars, TK_SEMI);
         break;
     }
@@ -353,9 +356,34 @@ static void parse_declaration_specifiers(PARSER *pars, TYPE *typ)
     LEAVE("parse_declaration_specifiers");
 }
 
+/*
+declaration
+	= declaration_specifiers [declarator_list] ';'
+*/
 static void parse_declaration(PARSER *pars)
 {
-    /*TODO*/
+    TYPE *typ;
+
+    ENTER("parse_declaration");
+
+    typ = new_type(T_UNKNOWN, SC_DEFAULT, NULL);
+    parse_declaration_specifiers(pars, typ);
+
+    for (;;) {
+        char *id;
+        TYPE *ntyp = dup_type(typ);
+        parse_declarator(pars, &ntyp, &id);
+
+printf("id:%s type:", id);
+print_type(ntyp);
+printf("\n");
+
+        if (pars->token != TK_COMMA)
+            break;
+        next(pars);
+    }
+    expect(pars, TK_SEMI);
+    LEAVE("parse_declaration");
 }
 
 /*

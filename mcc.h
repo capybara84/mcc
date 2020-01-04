@@ -39,6 +39,7 @@ struct type {
 };
 
 TYPE *new_type(TYPE_KIND kind, STORAGE_CLASS sclass, TYPE *typ);
+TYPE *dup_type(TYPE *typ);
 
 void print_type(const TYPE *typ);
 

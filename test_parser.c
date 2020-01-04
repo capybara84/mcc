@@ -17,7 +17,12 @@ const char *tests[] =
     "int **(**p)();",
     "int a;\n"
     "void foo();\n"
-    "int b;"
+    "int b;",
+    "int foo() {\n"
+    " int a,b;\n"
+    " if () {} else {}\n"
+    " while () ;\n"
+    "}\n"
 };
 #define N_TESTS (sizeof (tests) / sizeof (tests[0]))
 

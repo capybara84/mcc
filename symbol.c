@@ -1,3 +1,4 @@
+#include <string.h>
 #include "mcc.h"
 
 static SYMTAB *global_table = NULL;
@@ -11,6 +12,13 @@ TYPE *new_type(TYPE_KIND kind, STORAGE_CLASS sclass, TYPE *ref_typ)
     typ->sclass = sclass;
     typ->type = ref_typ;
     return typ;
+}
+
+TYPE *dup_type(TYPE *tp)
+{
+    TYPE *np = new_type(T_UNKNOWN, SC_DEFAULT, NULL);
+    memcpy(np, tp, sizeof (TYPE));
+    return np;
 }
 
 static void print_storage_class(STORAGE_CLASS sc)

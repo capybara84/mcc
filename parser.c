@@ -157,6 +157,7 @@ static void parse_primary_expression(PARSER *pars)
         expect(pars, TK_RPAR);
         break;
     default:
+        parser_error(pars, "syntax error (expression)");
         break;
     }
     LEAVE("parse_primary_expression");

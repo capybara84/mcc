@@ -20,8 +20,10 @@ const char *tests[] =
     "int b;",
     "int foo() {\n"
     " int a,b;\n"
-    " if () {} else {}\n"
-    " while () ;\n"
+    " a = 123;\n"
+    " if (a != 0) {} else {}\n"
+    " while (a == 1) ;\n"
+    "  a = a - 1;\n"
     "}\n"
 };
 #define N_TESTS (sizeof (tests) / sizeof (tests[0]))
@@ -33,9 +35,6 @@ int parse_test(void)
     NODE *np;
     int result = 0;
 
-/*
-    set_verbose_level(3);
-*/
     init_symtab();
     for (i = 0; i < N_TESTS; i++) {
         printf("-----------------\n");
@@ -59,5 +58,6 @@ int parse_test(void)
 
 int main(void)
 {
+    set_verbose_level(3);
     return parse_test();
 }

@@ -15,16 +15,25 @@ const char *tests[] =
     "static int **p;",
     "int (*p)();",
     "int **(**p)();",
+
     "int a;\n"
     "void foo();\n"
     "int b;",
+
     "int foo() {\n"
     " int a,b;\n"
     " a = 123;\n"
     " if (a != 0) {} else {}\n"
     " while (a == 1)\n"
     "  a = a - 1;\n"
-    "}\n"
+    "}\n",
+
+    "int a;\n"
+    "int a();\n",
+    "int a();\n"
+    "int a;\n",
+    "int a;int a;\n",
+    "int a();int a();\n",
 };
 #define N_TESTS (sizeof (tests) / sizeof (tests[0]))
 
@@ -32,11 +41,10 @@ int parse_test(void)
 {
     int i;
     PARSER *pars;
-    NODE *np;
     int result = 0;
 
-    init_symtab();
     for (i = 0; i < N_TESTS; i++) {
+        init_symtab();
         printf("-----------------\n");
         printf("test %d: %s\n", i, tests[i]);
         pars = open_parser_text("text", tests[i]);
@@ -46,13 +54,12 @@ int parse_test(void)
             close_parser(pars);
             result++;
         } else {
-            np = parse(pars);
+            parse(pars);
             close_parser(pars);
-            printf("NODE:");
-            print_node(np);
         }
+        print_global_symtab();
+        term_symtab();
     }
-    term_symtab();
     printf("result = %d\n", result);
     return result;
 }

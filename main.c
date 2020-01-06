@@ -3,7 +3,7 @@
 static int compile_file(const char *filename)
 {
     PARSER *pars;
-    NODE *np;
+    int result;
 
     pars = open_parser(filename);
     if (pars == NULL) {
@@ -14,11 +14,9 @@ static int compile_file(const char *filename)
         close_parser(pars);
         return 1;
     }
-    np = parse(pars);
+    result = parse(pars) ? 0 : 1;
     close_parser(pars);
-    if (!compile(np))
-        return 1;
-    return 0;
+    return result;
 }
 
 static void show_help(void)

@@ -605,12 +605,13 @@ external_declaration
     = declaration_specifiers declarator ';'
     | declaration_specifiers declarator compound_statement
 */
-static NODE *parse_external_delaration(PARSER *pars)
+static bool parse_external_delaration(PARSER *pars)
 {
     SYMBOL *sym;
-    NODE *np;
     TYPE *typ;
     char *id;
+    SYMBOL_KIND symkind;
+    bool already = false;
 
     ENTER("parse_external_delaration");
 
@@ -619,36 +620,55 @@ static NODE *parse_external_delaration(PARSER *pars)
 
     parse_declarator(pars, &typ, &id);
 
+    symkind = (typ->kind == T_FUNC) ? SK_FUNC : SK_VAR;
+
+    /* check same symbol */
+    {
+        SYMBOL *same = lookup_symbol_current(id);
+        if (same) {
+            if (same->kind == SK_FUNC && symkind == SK_FUNC) {
+                if (!equal_type(same->type, typ)) {
+                    parser_error(pars, "'%s' type mismatch", id);
+                } else {
+                    /* TODO check same is def(or decl) */
+                    already = true;
+                }
+            } else if (same->kind != symkind) {
+                parser_error(pars, "'%s' different kind of symbol", id);
+            } else {
+                parser_error(pars, "'%s' duplicated", id);
+            }
+        }
+    }
+
     if (pars->token == TK_SEMI) {
-        bool isfunc = typ->kind == T_FUNC;
-        sym = new_symbol(isfunc ? SK_FUNC : SK_VAR, id, typ);
-        np = new_node_sym(isfunc ? NK_FUNC_DECL : NK_VAR_DECL, sym, typ);
+        if (!already)
+            sym = new_symbol(symkind, id, typ);
         next(pars);
     } else if (pars->token == TK_BEGIN) {
-        sym = new_symbol(SK_FUNC, id, typ);
-        np = new_node_sym(NK_FUNC_DECL, sym, typ);
+        if (symkind != SK_FUNC)
+            parser_error(pars, "invalid function syntax");
+        if (!already)
+            sym = new_symbol(SK_FUNC, id, typ);
         parse_compound_statement(pars);
     } else {
-        np = NULL;
         parser_error(pars, "syntax error");
     }
     LEAVE("parse_external_delaration");
-    return np;
+    return true;
 }
 
 /*
 translation_unit
     = {external_declaration}
 */
-NODE *parse(PARSER *pars)
+bool parse(PARSER *pars)
 {
-    NODE *np = NULL;
-
     next(pars);
     while (pars->token != TK_EOF) {
-        NODE *n = parse_external_delaration(pars);
-        np = node_link(NK_DECL_LINK, np, n);
+         if (!parse_external_delaration(pars))
+            return false;
     }
-    return np;
+    return true;
 }
 

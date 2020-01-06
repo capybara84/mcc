@@ -14,6 +14,8 @@ typedef int bool;
 #define false   0
 
 extern jmp_buf g_error_jmp_buf;
+extern FILE *g_stdout;
+extern FILE *g_stderr;
 
 bool is_verbose_level(int n);
 void set_verbose_level(int n);
@@ -59,7 +61,8 @@ struct symbol {
     SYMBOL_KIND kind;
     char *id;
     TYPE *type;
-    NODE *body;
+    bool has_body;
+    NODE *body_node;
     SYMTAB *tab;
 };
 

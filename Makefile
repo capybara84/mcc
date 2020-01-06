@@ -1,4 +1,4 @@
-CFLAGS=-Wall
+CFLAGS=-Wall -g
 
 mcc : main.o gen.o node.o parser.o scanner.o symbol.o misc.o
 	$(CC) $(CFLAGS) -o $@ $^

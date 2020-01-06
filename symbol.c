@@ -101,7 +101,9 @@ SYMBOL *new_symbol(SYMBOL_KIND kind, char *id, TYPE *type)
     p->kind = kind;
     p->id = id;
     p->type = type;
-    p->body = NULL;
+    p->has_body = false;
+    p->body_node = NULL;
+    p->tab = NULL;
     return p;
 }
 
@@ -176,6 +178,8 @@ const char *get_kind_string(SYMBOL_KIND kind)
 void print_symtab_1(const SYMTAB *tab)
 {
     const SYMBOL *sym;
+    if (tab == NULL)
+        return;
     for (sym = tab->sym; sym != NULL; sym = sym->next) {
         print_symbol(sym);
     }
@@ -186,11 +190,11 @@ void print_symbol(const SYMBOL *sym)
     printf("SYM %s (%s):", sym->id, get_kind_string(sym->kind));
     print_type(sym->type);
     printf("\n");
-    if (sym->kind == SK_FUNC) {
+    if (sym->kind == SK_FUNC && sym->has_body) {
         printf("local tab\n");
         print_symtab_1(sym->tab);
         printf("{\n");
-        print_node(sym->body);
+        print_node(sym->body_node);
         printf("}\n");
     }
 }

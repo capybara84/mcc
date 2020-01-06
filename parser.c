@@ -805,7 +805,8 @@ static bool parse_external_delaration(PARSER *pars)
             enter_function(sym);
             body = parse_compound_statement(pars);
             leave_function();
-            sym->body = body;
+            sym->has_body = true;
+            sym->body_node = body;
         } else {
             /*TODO error if already defined */
         }

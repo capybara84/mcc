@@ -22,7 +22,7 @@ const char *tests[] =
     " int a,b;\n"
     " a = 123;\n"
     " if (a != 0) {} else {}\n"
-    " while (a == 1) ;\n"
+    " while (a == 1)\n"
     "  a = a - 1;\n"
     "}\n"
 };
@@ -48,6 +48,7 @@ int parse_test(void)
         } else {
             np = parse(pars);
             close_parser(pars);
+            printf("NODE:");
             print_node(np);
         }
     }
@@ -58,6 +59,8 @@ int parse_test(void)
 
 int main(void)
 {
+/*
     set_verbose_level(3);
+*/
     return parse_test();
 }

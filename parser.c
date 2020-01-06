@@ -587,11 +587,11 @@ static void parse_declaration(PARSER *pars)
         char *id;
         TYPE *ntyp = dup_type(typ);
         parse_declarator(pars, &ntyp, &id);
-
+/*
 printf("id:%s type:", id);
 print_type(ntyp);
 printf("\n");
-
+*/
         if (pars->token != TK_COMMA)
             break;
         next(pars);

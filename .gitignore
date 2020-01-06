@@ -1,4 +1,6 @@
 *.o
+*.output
+*.result
 mcc
 test_scanner
 test_parser

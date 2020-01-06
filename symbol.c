@@ -173,12 +173,22 @@ const char *get_kind_string(SYMBOL_KIND kind)
     return "";
 }
 
+void print_symtab_1(const SYMTAB *tab)
+{
+    const SYMBOL *sym;
+    for (sym = tab->sym; sym != NULL; sym = sym->next) {
+        print_symbol(sym);
+    }
+}
+
 void print_symbol(const SYMBOL *sym)
 {
     printf("SYM %s (%s):", sym->id, get_kind_string(sym->kind));
     print_type(sym->type);
     printf("\n");
     if (sym->kind == SK_FUNC) {
+        printf("local tab\n");
+        print_symtab_1(sym->tab);
         printf("{\n");
         print_node(sym->body);
         printf("}\n");
@@ -188,10 +198,7 @@ void print_symbol(const SYMBOL *sym)
 void print_symtab(const SYMTAB *tab)
 {
     for (; tab != NULL; tab = tab->up) {
-        const SYMBOL *sym;
-        for (sym = tab->sym; sym != NULL; sym = sym->next) {
-            print_symbol(sym);
-        }
+        print_symtab_1(tab);
     }
 }
 

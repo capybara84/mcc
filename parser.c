@@ -235,7 +235,7 @@ static NODE *parse_argument_expression_list(PARSER *pars)
     np = parse_assignment_expression(pars);
     while (pars->token == TK_COMMA) {
         next(pars);
-        np = new_node2(NK_ARG, parse_assignment_expression(pars), np);
+        np = new_node2(NK_ARG, np, parse_assignment_expression(pars));
     }
     LEAVE("parse_argument_expression_list");
     return np;

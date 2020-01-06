@@ -102,7 +102,9 @@ static const char *node_kind_to_str(NODE_KIND kind)
 void print_node(NODE *np)
 {
     if (np == NULL) {
+/*
         printf("<NULL>");
+*/
         return;
     }
     switch (np->kind) {

@@ -40,6 +40,7 @@ struct type {
 
 TYPE *new_type(TYPE_KIND kind, STORAGE_CLASS sclass, TYPE *typ);
 TYPE *dup_type(TYPE *typ);
+bool equal_type(const TYPE *tl, const TYPE *tr);
 
 void print_type(const TYPE *typ);
 
@@ -68,6 +69,12 @@ SYMBOL *new_symbol(SYMBOL_KIND kind, char *id, TYPE *type);
 bool init_symtab(void);
 void term_symtab(void);
 SYMTAB *new_symtab(SYMTAB *up);
+SYMBOL *lookup_symbol_current(const char *id);
+SYMBOL *lookup_symbol(const char *id);
+
+void print_symbol(const SYMBOL *sym);
+void print_symtab(const SYMTAB *tab);
+void print_global_symtab(void);
 
 typedef enum {
     TK_EOF, TK_ID, TK_INT_LIT,
@@ -100,7 +107,7 @@ const char *scan_token_to_string(SCANNER *scan, TOKEN tk);
 typedef struct symbol SYMBOL;
 
 typedef enum {
-    NK_DECL_LINK, NK_FUNC_DECL, NK_VAR_DECL,
+    NK_DUMMY,
 } NODE_KIND;
 
 typedef struct node NODE;
@@ -111,15 +118,9 @@ struct node {
             NODE *left;
             NODE *right;
         } bin;
-        struct {
-            SYMBOL *sym;
-            TYPE *type;
-        } sym;
     } u;
 };
 
-NODE *new_node_sym(NODE_KIND kind, SYMBOL *sym, TYPE *typ);
-NODE *node_link(NODE_KIND kind, NODE *top, NODE *n);
 void print_node(NODE *np);
 
 typedef struct {
@@ -130,7 +131,7 @@ typedef struct {
 PARSER *open_parser_text(const char *filename, const char *text);
 PARSER *open_parser(const char *filename);
 bool close_parser(PARSER *pars);
-NODE *parse(PARSER *pars);
+bool parse(PARSER *pars);
 
 bool compile(NODE *np);
 

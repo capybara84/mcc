@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <string.h>
 #include "mcc.h"
 
@@ -19,6 +20,21 @@ TYPE *dup_type(TYPE *tp)
     TYPE *np = new_type(T_UNKNOWN, SC_DEFAULT, NULL);
     memcpy(np, tp, sizeof (TYPE));
     return np;
+}
+
+bool equal_type(const TYPE *tl, const TYPE *tr)
+{
+    if (tl == NULL && tr == NULL)
+        return true;
+    if (tl == NULL || tr == NULL)
+        return false;
+    if (tl->kind != tr->kind)
+        return false;
+    if (tl->sclass != tr->sclass)
+        return false;
+    if (!equal_type(tl->type, tr->type))
+        return false;
+    return true;
 }
 
 static void print_storage_class(STORAGE_CLASS sc)
@@ -76,13 +92,43 @@ void print_type(const TYPE *typ)
 
 SYMBOL *new_symbol(SYMBOL_KIND kind, char *id, TYPE *type)
 {
-    SYMBOL *p = (SYMBOL*) alloc(sizeof (SYMBOL));
-    p->next = NULL;
+    SYMBOL *p;
+
+    assert(current_symtab);
+    p = (SYMBOL*) alloc(sizeof (SYMBOL));
+    p->next = current_symtab->sym;
+    current_symtab->sym = p;
     p->kind = kind;
     p->id = id;
     p->type = type;
     return p;
 }
+
+SYMBOL *lookup_symbol_current(const char *id)
+{
+    SYMBOL *sym;
+
+    for (sym = current_symtab->sym; sym != NULL; sym = sym->next) {
+        if (sym->id == id)
+            return sym;
+    }
+    return NULL;
+}
+
+SYMBOL *lookup_symbol(const char *id)
+{
+    SYMTAB *tab;
+    SYMBOL *sym;
+
+    for (tab = current_symtab; tab != NULL; tab = tab->up) {
+        for (sym = tab->sym; sym != NULL; sym = sym->next) {
+            if (sym->id == id)
+                return sym;
+        }
+    }
+    return NULL;
+}
+
 
 SYMTAB *new_symtab(SYMTAB *up)
 {
@@ -102,3 +148,37 @@ bool init_symtab(void)
 void term_symtab(void)
 {
 }
+
+const char *get_kind_string(SYMBOL_KIND kind)
+{
+    switch (kind) {
+    case SK_VAR:    return "VAR";
+    case SK_FUNC:   return "FUNC";
+    default:
+        assert(0);
+    }
+    return "";
+}
+
+void print_symbol(const SYMBOL *sym)
+{
+    printf("SYM %s (%s):", sym->id, get_kind_string(sym->kind));
+    print_type(sym->type);
+    printf("\n");
+}
+
+void print_symtab(const SYMTAB *tab)
+{
+    for (; tab != NULL; tab = tab->up) {
+        const SYMBOL *sym;
+        for (sym = tab->sym; sym != NULL; sym = sym->next) {
+            print_symbol(sym);
+        }
+    }
+}
+
+void print_global_symtab(void)
+{
+    print_symtab(global_table);
+}
+

@@ -34,6 +34,16 @@ const char *tests[] =
     "int a;\n",
     "int a;int a;\n",
     "int a();int a();\n",
+
+"int foo()\n"
+"{\n"
+"    int a, b;\n"
+"    a = 123;\n"
+"    b = 0;\n"
+"    for (a = 0; a < 10; a = a + 1)\n"
+"        b = b + a;\n"
+"    return b;\n"
+"}\n",
 };
 #define N_TESTS (sizeof (tests) / sizeof (tests[0]))
 

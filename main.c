@@ -16,6 +16,8 @@ static int compile_file(const char *filename)
     }
     result = parse(pars) ? 0 : 1;
     close_parser(pars);
+    
+    print_global_symtab();
     return result;
 }
 

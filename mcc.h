@@ -44,20 +44,24 @@ bool equal_type(const TYPE *tl, const TYPE *tr);
 
 void print_type(const TYPE *typ);
 
+
+typedef struct node NODE;
+
 typedef enum {
     SK_VAR, SK_FUNC,
 } SYMBOL_KIND;
 
 typedef struct symbol SYMBOL;
+typedef struct symtab SYMTAB;
 
 struct symbol {
     SYMBOL *next;
     SYMBOL_KIND kind;
     char *id;
     TYPE *type;
+    NODE *body;
+    SYMTAB *tab;
 };
-
-typedef struct symtab SYMTAB;
 
 struct symtab {
     SYMBOL *sym;
@@ -69,6 +73,8 @@ SYMBOL *new_symbol(SYMBOL_KIND kind, char *id, TYPE *type);
 bool init_symtab(void);
 void term_symtab(void);
 SYMTAB *new_symtab(SYMTAB *up);
+void enter_function(SYMBOL *sym);
+void leave_function(void);
 SYMBOL *lookup_symbol_current(const char *id);
 SYMBOL *lookup_symbol(const char *id);
 
@@ -104,23 +110,39 @@ char *intern(const char *s);
 const char *token_to_string(TOKEN tk);
 const char *scan_token_to_string(SCANNER *scan, TOKEN tk);
 
-typedef struct symbol SYMBOL;
 
 typedef enum {
-    NK_DUMMY,
+    NK_COMPOUND, NK_IF, NK_WHILE, NK_FOR, NK_CONTINUE, NK_BREAK,
+    NK_RETURN, NK_EXPR,
+    NK_ASSIGN, NK_LOR, NK_LAND,
+    NK_EQ, NK_NEQ, NK_LT, NK_GT, NK_LE, NK_GE, NK_ADD, NK_SUB,
+    NK_MUL, NK_DIV, NK_ADDR, NK_PTR, NK_MINUS, NK_NOT,
+    NK_ID, NK_INT_LIT,
+    NK_CALL, NK_ARG,
 } NODE_KIND;
 
-typedef struct node NODE;
 struct node {
     NODE_KIND kind;
     union {
         struct {
-            NODE *left;
-            NODE *right;
-        } bin;
+            NODE *n1;
+            NODE *n2;
+            NODE *n3;
+            NODE *n4;
+        } link;
+        SYMBOL *sym;
+        int num;
     } u;
 };
 
+NODE *new_node(NODE_KIND kind);
+NODE *new_node1(NODE_KIND kind, NODE *n1);
+NODE *new_node2(NODE_KIND kind, NODE *n1, NODE *n2);
+NODE *new_node3(NODE_KIND kind, NODE *n1, NODE *n2, NODE *n3);
+NODE *new_node4(NODE_KIND kind, NODE *n1, NODE *n2, NODE *n3, NODE *n4);
+NODE *link_node(NODE_KIND kind, NODE *node, NODE *top);
+NODE *new_node_sym(NODE_KIND kind, SYMBOL *sym);
+NODE *new_node_lit(NODE_KIND kind, int num);
 void print_node(NODE *np);
 
 typedef struct {

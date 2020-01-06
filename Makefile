@@ -5,7 +5,7 @@ mcc : main.o gen.o node.o parser.o scanner.o symbol.o misc.o
 
 test: scanner_test parser_test
 
-test_scanner : test_scanner.o scanner.o symbol.o misc.o
+test_scanner : test_scanner.o scanner.o node.o symbol.o misc.o
 	$(CC) $(CFLAGS) -o $@ $^
 
 scanner_test : test_scanner

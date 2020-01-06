@@ -101,6 +101,7 @@ SYMBOL *new_symbol(SYMBOL_KIND kind, char *id, TYPE *type)
     p->kind = kind;
     p->id = id;
     p->type = type;
+    p->body = NULL;
     return p;
 }
 
@@ -138,6 +139,18 @@ SYMTAB *new_symtab(SYMTAB *up)
     return tab;
 }
 
+void enter_function(SYMBOL *sym)
+{
+    sym->tab = new_symtab(current_symtab);
+    current_symtab = sym->tab;
+}
+
+void leave_function(void)
+{
+    assert(current_symtab->up);
+    current_symtab = current_symtab->up;
+}
+
 bool init_symtab(void)
 {
     global_table = new_symtab(NULL);
@@ -165,6 +178,11 @@ void print_symbol(const SYMBOL *sym)
     printf("SYM %s (%s):", sym->id, get_kind_string(sym->kind));
     print_type(sym->type);
     printf("\n");
+    if (sym->kind == SK_FUNC) {
+        printf("{\n");
+        print_node(sym->body);
+        printf("}\n");
+    }
 }
 
 void print_symtab(const SYMTAB *tab)

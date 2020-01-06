@@ -125,8 +125,6 @@ static bool is_statement(PARSER *pars)
 static bool is_unary_operator(PARSER *pars)
 {
     static TOKEN begin_with[] = { TK_AND, TK_STAR, TK_SLASH, TK_INT };
-    if (is_expression(pars))
-        return true;
     return is_token_begin_with(pars, begin_with, COUNT_OF(begin_with));
 }
 

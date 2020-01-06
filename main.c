@@ -3,18 +3,22 @@
 static int compile_file(const char *filename)
 {
     PARSER *pars;
-    NODE *np;
+    int result;
 
     pars = open_parser(filename);
     if (pars == NULL) {
         fprintf(stderr, "can't open '%s'\n", filename);
         return 1;
     }
-    np = parse(pars);
-    close_parser(pars);
-    if (!compile_node(np))
+    if (setjmp(g_error_jmp_buf) != 0) {
+        close_parser(pars);
         return 1;
-    return 0;
+    }
+    result = parse(pars) ? 0 : 1;
+    close_parser(pars);
+    
+    print_global_symtab();
+    return result;
 }
 
 static void show_help(void)

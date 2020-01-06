@@ -33,9 +33,9 @@ void print_ident(void)
 char *intern(const char *s)
 {
     IDENT *id = s_ident_top;
-
+/*
     print_ident();
-
+*/
     for (; id != NULL; id = id->next)
         if (strcmp(id->id, s) == 0)
             return id->id;
@@ -88,7 +88,9 @@ bool close_scanner(SCANNER *s)
 {
     if (s == NULL)
         return false;
+/*
     print_ident();
+*/
     free(s);
     return true;
 }
@@ -115,8 +117,9 @@ static int next_char(SCANNER *scan)
         scan->line++;
     scan->ch = scan->source[scan->pos++];
 
-printf("%s(%d):next_char: '%c'\n", scan->filename, scan->line, scan->ch);
-
+/*
+    printf("%s(%d):next_char: '%c'\n", scan->filename, scan->line, scan->ch);
+*/
     return scan->ch;
 }
 
@@ -131,6 +134,17 @@ static TOKEN scan_id(SCANNER *scan)
     }
     buffer[i] = '\0';
     /*TODO keywords */
+    if (strcmp(buffer, "static") == 0) return TK_STATIC;
+    if (strcmp(buffer, "extern") == 0) return TK_EXTERN;
+    if (strcmp(buffer, "void") == 0) return TK_VOID;
+    if (strcmp(buffer, "int") == 0) return TK_INT;
+    if (strcmp(buffer, "if") == 0) return TK_IF;
+    if (strcmp(buffer, "else") == 0) return TK_ELSE;
+    if (strcmp(buffer, "while") == 0) return TK_WHILE;
+    if (strcmp(buffer, "for") == 0) return TK_FOR;
+    if (strcmp(buffer, "continue") == 0) return TK_CONTINUE;
+    if (strcmp(buffer, "break") == 0) return TK_BREAK;
+    if (strcmp(buffer, "return") == 0) return TK_RETURN;
     scan->id = intern(buffer);
     return TK_ID;
 }
@@ -161,6 +175,56 @@ TOKEN next_token(SCANNER *scan)
             return scan_id(scan);
         if (isdigit(scan->ch))
             return scan_num(scan);
+        switch (scan->ch) {
+        case ',':   next_char(scan);    return TK_COMMA;
+        case ';':   next_char(scan);    return TK_SEMI;
+        case '(':   next_char(scan);    return TK_LPAR;
+        case ')':   next_char(scan);    return TK_RPAR;
+        case '{':   next_char(scan);    return TK_BEGIN;
+        case '}':   next_char(scan);    return TK_END;
+        case '*':   next_char(scan);    return TK_STAR;
+        case '/':   next_char(scan);    return TK_SLASH;
+        case '+':   next_char(scan);    return TK_PLUS;
+        case '-':   next_char(scan);    return TK_MINUS;
+        case '|':
+            if (next_char(scan) == '|') {
+                next_char(scan);
+                return TK_LOR;
+            }
+            break;
+        case '&':
+            if (next_char(scan) == '&') {
+                next_char(scan);
+                return TK_LAND;
+            }
+            return TK_AND;
+        case '=':
+            if (next_char(scan) == '=') {
+                next_char(scan);
+                return TK_EQ;
+            }
+            return TK_ASSIGN;
+        case '!':
+            if (next_char(scan) == '=') {
+                next_char(scan);
+                return TK_NEQ;
+            }
+            return TK_NOT;
+        case '<':
+            if (next_char(scan) == '=') {
+                next_char(scan);
+                return TK_LE;
+            }
+            return TK_LT;
+        case '>':
+            if (next_char(scan) == '=') {
+                next_char(scan);
+                return TK_GE;
+            }
+            return TK_GT;
+        default:
+            break;
+        }
         error(scan->filename, scan->line,
             (isprint(scan->ch) ? "illegal character '%c'"
                               : "illegal character (code=%02d)"), scan->ch);
@@ -174,6 +238,38 @@ const char *token_to_string(TOKEN tk)
     case TK_EOF:        return "<EOF>";
     case TK_ID:         return "<ID>";
     case TK_INT_LIT:    return "<INT LIT>";
+    case TK_STATIC:     return "static";
+    case TK_EXTERN:     return "extern";
+    case TK_VOID:       return "void";
+    case TK_INT:        return "int";
+    case TK_IF:         return "if";
+    case TK_ELSE:       return "else";
+    case TK_WHILE:      return "while";
+    case TK_FOR:        return "for";
+    case TK_CONTINUE:   return "continue";
+    case TK_BREAK:      return "break";
+    case TK_RETURN:     return "return";
+    case TK_COMMA:      return ",";
+    case TK_SEMI:       return ";";
+    case TK_LPAR:       return "(";
+    case TK_RPAR:       return ")";
+    case TK_BEGIN:      return "{";
+    case TK_END:        return "}";
+    case TK_STAR:       return "*";
+    case TK_SLASH:      return "/";
+    case TK_PLUS:       return "+";
+    case TK_MINUS:      return "-";
+    case TK_ASSIGN:     return "=";
+    case TK_LOR:        return "||";
+    case TK_LAND:       return "&&";
+    case TK_EQ:         return "==";
+    case TK_NEQ:        return "!=";
+    case TK_LT:         return "<";
+    case TK_GT:         return ">";
+    case TK_LE:         return "<=";
+    case TK_GE:         return ">=";
+    case TK_AND:        return "&";
+    case TK_NOT:        return "!";
     }
     return "";
 }

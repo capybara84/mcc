@@ -29,4 +29,3 @@ int f() {
         b = b + a;
     return b;
 }
-

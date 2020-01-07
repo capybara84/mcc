@@ -450,11 +450,16 @@ compound_statement
 declaration_list
     = declaration {declaration}
 */
-static NODE *parse_compound_statement(PARSER *pars)
+static NODE *parse_compound_statement(PARSER *pars, SYMTAB **pptab)
 {
     NODE *np = NULL;
 
     ENTER("parse_compound_statement");
+
+    if (pptab)
+        *pptab = enter_scope(*pptab);
+    else
+        enter_scope(NULL);
     next(pars); /* skip '{' */
     while (is_declaration(pars))
         parse_declaration(pars);
@@ -464,6 +469,7 @@ static NODE *parse_compound_statement(PARSER *pars)
         np = link_node(NK_COMPOUND, p, np);
     }
     expect(pars, TK_END);
+    leave_scope();
     LEAVE("parse_compound_statement");
     return np;
 }
@@ -505,7 +511,7 @@ static NODE *parse_statement(PARSER *pars)
     switch (pars->token) {
     case TK_BEGIN:
         TRACE("parse_statement", "compound");
-        np = parse_compound_statement(pars);
+        np = parse_compound_statement(pars, NULL);
         break;
     case TK_IF:
         TRACE("parse_statement", "if");
@@ -734,17 +740,40 @@ static void parse_declaration(PARSER *pars)
         char *id;
         TYPE *ntyp;
         SYMBOL_KIND symkind;
+        bool already = false;
 
         ntyp = dup_type(typ);
         parse_declarator(pars, &ntyp, &id);
 
+/*
 printf("local id:%s type:", id);
 print_type(ntyp);
 printf("\n");
-        /* TODO check */
+*/
 
         symkind = (typ->kind == T_FUNC) ? SK_FUNC : SK_VAR;
-        new_symbol(symkind, id, typ);
+        if (symkind == SK_FUNC) {
+            SYMBOL *same = lookup_symbol(id);
+            if (same) {
+                if (same->kind != SK_FUNC) {
+                    parser_error(pars, "'%s' differenct kind of symbol", id);
+                } else if (!equal_type(same->type, typ)) {
+                    parser_error(pars, "'%s' type mismatch", id);
+                } else
+                    already = true;
+            }
+        } else {
+            SYMBOL *same = lookup_symbol_local(id);
+            if (same) {
+                if (same->kind != symkind) {
+                    parser_error(pars, "'%s' different kind of symbol", id);
+                } else {
+                    parser_error(pars, "'%s' duplicated", id);
+                }
+            }
+        }
+        if (!already)
+            new_symbol(symkind, id, typ);
 
         if (pars->token != TK_COMMA)
             break;
@@ -761,11 +790,10 @@ external_declaration
 */
 static bool parse_external_delaration(PARSER *pars)
 {
-    SYMBOL *sym;
+    SYMBOL *sym = NULL;
     TYPE *typ;
     char *id;
     SYMBOL_KIND symkind;
-    bool already = false;
 
     ENTER("parse_external_delaration");
 
@@ -777,43 +805,35 @@ static bool parse_external_delaration(PARSER *pars)
     symkind = (typ->kind == T_FUNC) ? SK_FUNC : SK_VAR;
 
     /* check same symbol */
-    {
-        SYMBOL *same = lookup_symbol(id);
-        if (same) {
-            if (same->kind == SK_FUNC && symkind == SK_FUNC) {
-                if (!equal_type(same->type, typ)) {
-                    parser_error(pars, "'%s' type mismatch", id);
-                } else {
-                    /* TODO check same is def(or decl) */
-                    already = true;
-                }
-            } else if (same->kind != symkind) {
-                parser_error(pars, "'%s' different kind of symbol", id);
-            } else {
-                parser_error(pars, "'%s' duplicated", id);
+    sym = lookup_symbol(id);
+    if (sym) {
+        if (sym->kind == SK_FUNC && symkind == SK_FUNC) {
+            if (!equal_type(sym->type, typ)) {
+                parser_error(pars, "'%s' type mismatch", id);
             }
+        } else if (sym->kind != symkind) {
+            parser_error(pars, "'%s' different kind of symbol", id);
+        } else {
+            parser_error(pars, "'%s' duplicated", id);
         }
     }
 
     if (pars->token == TK_SEMI) {
-        if (!already)
+        if (sym == NULL)
             sym = new_symbol(symkind, id, typ);
         next(pars);
     } else if (pars->token == TK_BEGIN) {
+        NODE *body;
         if (symkind != SK_FUNC)
             parser_error(pars, "invalid function syntax");
-        if (!already) {
-            NODE *body;
+        if (sym && sym->has_body)
+            parser_error(pars, "'%s' redefinition", id);
+        else
             sym = new_symbol(SK_FUNC, id, typ);
-            enter_function(sym);
-            body = parse_compound_statement(pars);
-            /*TODO calc local table size */
-            leave_function();
-            sym->has_body = true;
-            sym->body_node = body;
-        } else {
-            /*TODO error if already defined */
-        }
+        body = parse_compound_statement(pars, &sym->tab);
+        /*TODO calc local table size */
+        sym->has_body = true;
+        sym->body_node = body;
     } else {
         parser_error(pars, "syntax error");
     }

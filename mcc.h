@@ -76,8 +76,9 @@ SYMBOL *new_symbol(SYMBOL_KIND kind, char *id, TYPE *type);
 bool init_symtab(void);
 void term_symtab(void);
 SYMTAB *new_symtab(SYMTAB *up);
-void enter_function(SYMBOL *sym);
-void leave_function(void);
+SYMTAB *enter_scope(SYMTAB *up);
+void leave_scope(void);
+SYMBOL *lookup_symbol_local(const char *id);
 SYMBOL *lookup_symbol(const char *id);
 
 void print_symbol(const SYMBOL *sym);

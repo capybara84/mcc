@@ -1,0 +1,6 @@
+SYM foo (FUNC):FUNC <void > PARAM () 
+local tab
+SYM a (VAR):int 
+{
+}
+SYM a (VAR):int 

@@ -107,6 +107,16 @@ SYMBOL *new_symbol(SYMBOL_KIND kind, char *id, TYPE *type)
     return p;
 }
 
+SYMBOL *lookup_symbol_local(const char *id)
+{
+    SYMBOL *sym;
+    for (sym = current_symtab->sym; sym != NULL; sym = sym->next) {
+        if (sym->id == id)
+            return sym;
+    }
+    return NULL;
+}
+
 SYMBOL *lookup_symbol(const char *id)
 {
     SYMTAB *tab;
@@ -130,13 +140,13 @@ SYMTAB *new_symtab(SYMTAB *up)
     return tab;
 }
 
-void enter_function(SYMBOL *sym)
+SYMTAB *enter_scope(SYMTAB *up)
 {
-    sym->tab = new_symtab(current_symtab);
-    current_symtab = sym->tab;
+    SYMTAB *tab = new_symtab(up ? up : current_symtab);
+    return current_symtab = tab;
 }
 
-void leave_function(void)
+void leave_scope(void)
 {
     assert(current_symtab->up);
     current_symtab = current_symtab->up;

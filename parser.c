@@ -765,11 +765,7 @@ printf("\n");
         } else {
             SYMBOL *same = lookup_symbol_local(id);
             if (same) {
-                if (same->kind != symkind) {
-                    parser_error(pars, "'%s' different kind of symbol", id);
-                } else {
-                    parser_error(pars, "'%s' duplicated", id);
-                }
+                parser_error(pars, "'%s' duplicated", id);
             }
         }
         if (!already)

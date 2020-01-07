@@ -1,60 +1,73 @@
 #include "mcc.h"
 
-const char *source =
-"abc 123\n"
-"static extern void int\n"
-"if else while for continue break return \n"
-", ; ( ) { } * / + - = || &&\n"
-"== != < > <= >= & !";
-
-TOKEN tokens[] =
-    { TK_ID, TK_INT_LIT, TK_STATIC, TK_EXTERN, TK_VOID, TK_INT,
-        TK_IF, TK_ELSE, TK_WHILE, TK_FOR, TK_CONTINUE, TK_BREAK, TK_RETURN,
-        TK_COMMA, TK_SEMI, TK_LPAR, TK_RPAR, TK_BEGIN, TK_END,
-        TK_STAR, TK_SLASH, TK_PLUS, TK_MINUS, TK_ASSIGN, TK_LOR, TK_LAND,
-        TK_EQ, TK_NEQ, TK_LT, TK_GT, TK_LE, TK_GE, TK_AND, TK_NOT,
-        TK_EOF };
-#define N_TOKENS    (sizeof (tokens) / sizeof (TOKEN))
-
-int main(void)
+int scan_file(const char *filename)
 {
     SCANNER *scan;
     TOKEN tk;
-    int i;
-    int result = 0;
 
-    init_symtab();
-    scan = open_scanner_text("test", source);
-    if (scan == NULL)
+    scan = open_scanner(filename);
+    if (scan == NULL) {
+        printf("can't open '%s'\n", filename);
         return 1;
+    }
     if (setjmp(g_error_jmp_buf) != 0) {
         close_scanner(scan);
-        term_symtab();
         return 1;
     }
-    i = 0;
     while ((tk = next_token(scan)) != TK_EOF) {
-/*
         printf("%s(%d): %s\n", scan->filename, scan->line,
-            token_to_string(tk));
-*/
-        if (tokens[i] == tk) {
-            printf("OK %d token %s\n", i, scan_token_to_string(scan, tk));
-        } else {
-            printf("FAIL %d token %s, expect %s\n", i,
-                token_to_string(tk), token_to_string(tokens[i]));
-            result++;
-        }
-        if (i < N_TOKENS)
-            i++;
-    }
-    if (i+1 == N_TOKENS) {
-        printf("DONE\n");
-    } else {
-        printf("FAIL size %d, expect %lu\n", i+1, N_TOKENS);
-        result++;
+                token_to_string(tk));
     }
     close_scanner(scan);
+    return 0;
+}
+
+static void show_help(void)
+{
+    printf("test_scanner\n");
+    printf("usage: test_scanner [-h][-v N] filename\n");
+    printf("option\n");
+    printf("  -h       help\n");
+    printf("  -v N     set verbose level N\n");
+}
+
+static int parse_command_line(int argc, char *argv[])
+{
+    int i, n = 0;
+    int n_file = 0;
+
+    for (i = 1; i < argc; i++) {
+        if (argv[i][0] == '-') {
+            switch (argv[i][1]) {
+            case 'v':
+                if (argv[i][2] != 0)
+                    set_verbose_level(atoi(&argv[i][2]));
+                else if (++i < argc)
+                    set_verbose_level(atoi(argv[i]));
+                else
+                    goto done;
+                break;
+            default:
+                goto done;
+            }
+        } else {
+            n += scan_file(argv[i]);
+            n_file++;
+        }
+    }
+done:
+    if (n_file == 0) {
+        show_help();
+        return 0;
+    }
+    return n;
+}
+
+int main(int argc, char *argv[])
+{
+    int result;
+    init_symtab();
+    result = parse_command_line(argc, argv);
     term_symtab();
     return result;
 }

@@ -1,6 +1,6 @@
 #include "mcc.h"
 
-int compile_file(char *filename)
+int compile_file(const char *filename)
 {
     PARSER *pars;
     int result = 0;

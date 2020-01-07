@@ -260,6 +260,7 @@ static NODE *parse_postfix_expression(PARSER *pars)
             a = NULL;
         }
         expect(pars, TK_RPAR);
+        /*TODO check np is function */
         np = new_node2(NK_CALL, np, a);
     }
     LEAVE("parse_postfix_expression");
@@ -419,6 +420,7 @@ static NODE *parse_assignment_expression(PARSER *pars)
     np = parse_logical_or_expression(pars);
     if (pars->token == TK_ASSIGN) {
         /* TODO unary_expression (left value) */
+        /* TODO check np is left value */
         next(pars);
         np = new_node2(NK_ASSIGN, np, parse_assignment_expression(pars));
     }
@@ -456,7 +458,7 @@ static NODE *parse_compound_statement(PARSER *pars)
     next(pars); /* skip '{' */
     while (is_declaration(pars))
         parse_declaration(pars);
-    /*TODO*/
+    /*TODO calc local variable size */
     while (is_statement(pars)) {
         NODE *p = parse_statement(pars);
         np = link_node(NK_COMPOUND, p, np);
@@ -735,6 +737,7 @@ static void parse_declaration(PARSER *pars)
 
         ntyp = dup_type(typ);
         parse_declarator(pars, &ntyp, &id);
+
 printf("local id:%s type:", id);
 print_type(ntyp);
 printf("\n");
@@ -775,7 +778,7 @@ static bool parse_external_delaration(PARSER *pars)
 
     /* check same symbol */
     {
-        SYMBOL *same = lookup_symbol_current(id);
+        SYMBOL *same = lookup_symbol(id);
         if (same) {
             if (same->kind == SK_FUNC && symkind == SK_FUNC) {
                 if (!equal_type(same->type, typ)) {
@@ -804,6 +807,7 @@ static bool parse_external_delaration(PARSER *pars)
             sym = new_symbol(SK_FUNC, id, typ);
             enter_function(sym);
             body = parse_compound_statement(pars);
+            /*TODO calc local table size */
             leave_function();
             sym->has_body = true;
             sym->body_node = body;

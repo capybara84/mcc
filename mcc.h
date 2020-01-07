@@ -78,7 +78,6 @@ void term_symtab(void);
 SYMTAB *new_symtab(SYMTAB *up);
 void enter_function(SYMBOL *sym);
 void leave_function(void);
-SYMBOL *lookup_symbol_current(const char *id);
 SYMBOL *lookup_symbol(const char *id);
 
 void print_symbol(const SYMBOL *sym);

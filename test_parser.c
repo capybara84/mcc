@@ -1,83 +1,74 @@
 #include "mcc.h"
 
-const char *tests[] =
+int compile_file(char *filename)
 {
-    "int a;",
-    "void foo();",
-    "int bar() {}",
-    "static int b;",
-    "extern void baz();",
-    "int *p;",
-    "int **pp;",
-    "void *ptr;",
-    "int (*pfn)();",
-    "int (**ppfn)();",
-    "static int **p;",
-    "int (*p)();",
-    "int **(**p)();",
-
-    "int a;\n"
-    "void foo();\n"
-    "int b;",
-
-    "int foo() {\n"
-    " int a,b;\n"
-    " a = 123;\n"
-    " if (a != 0) {} else {}\n"
-    " while (a == 1)\n"
-    "  a = a - 1;\n"
-    "}\n",
-
-    "int a;\n"
-    "int a();\n",
-    "int a();\n"
-    "int a;\n",
-    "int a;int a;\n",
-    "int a();int a();\n",
-
-"int foo()\n"
-"{\n"
-"    int a, b;\n"
-"    a = 123;\n"
-"    b = 0;\n"
-"    for (a = 0; a < 10; a = a + 1)\n"
-"        b = b + a;\n"
-"    return b;\n"
-"}\n",
-};
-#define N_TESTS (sizeof (tests) / sizeof (tests[0]))
-
-int parse_test(void)
-{
-    int i;
     PARSER *pars;
     int result = 0;
 
-    for (i = 0; i < N_TESTS; i++) {
-        init_symtab();
-        printf("-----------------\n");
-        printf("test %d: %s\n", i, tests[i]);
-        pars = open_parser_text("text", tests[i]);
-        if (pars == NULL)
-            return 1;
-        if (setjmp(g_error_jmp_buf) != 0) {
-            close_parser(pars);
-            result++;
-        } else {
-            parse(pars);
-            close_parser(pars);
-        }
-        print_global_symtab();
-        term_symtab();
+    init_symtab();
+    pars = open_parser(filename);
+    if (pars == NULL) {
+        printf("can't open '%s'\n", filename);
+        return 1;
     }
-    printf("result = %d\n", result);
+    if (setjmp(g_error_jmp_buf) != 0) {
+        close_parser(pars);
+        result++;
+    } else {
+        parse(pars);
+        close_parser(pars);
+    }
+    print_global_symtab();
+    term_symtab();
     return result;
 }
 
-int main(void)
+static void show_help(void)
 {
-/*
-    set_verbose_level(3);
-*/
-    return parse_test();
+    printf("test_parser\n");
+    printf("usage: test_parser [-h][-v N] filename\n");
+    printf("option\n");
+    printf("  -h       help\n");
+    printf("  -v N     set verbose level N\n");
+}
+
+static int parse_command_line(int argc, char *argv[])
+{
+    int i, n = 0;
+    int n_file = 0;
+
+    for (i = 1; i < argc; i++) {
+        if (argv[i][0] == '-') {
+            switch (argv[i][1]) {
+            case 'v':
+                if (argv[i][2] != 0)
+                    set_verbose_level(atoi(&argv[i][2]));
+                else if (++i < argc)
+                    set_verbose_level(atoi(argv[i]));
+                else
+                    goto done;
+                break;
+            default:
+                goto done;
+            }
+        } else {
+            n += compile_file(argv[i]);
+            n_file++;
+        }
+    }
+done:
+    if (n_file == 0) {
+        show_help();
+        return 0;
+    }
+    return n;
+}
+
+int main(int argc, char *argv[])
+{
+    int result;
+    init_symtab();
+    result = parse_command_line(argc, argv);
+    term_symtab();
+    return result;
 }

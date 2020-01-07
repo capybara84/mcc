@@ -107,17 +107,6 @@ SYMBOL *new_symbol(SYMBOL_KIND kind, char *id, TYPE *type)
     return p;
 }
 
-SYMBOL *lookup_symbol_current(const char *id)
-{
-    SYMBOL *sym;
-
-    for (sym = current_symtab->sym; sym != NULL; sym = sym->next) {
-        if (sym->id == id)
-            return sym;
-    }
-    return NULL;
-}
-
 SYMBOL *lookup_symbol(const char *id)
 {
     SYMTAB *tab;

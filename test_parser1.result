@@ -1,0 +1,43 @@
+local id:a type:int 
+local id:b type:int 
+local id:a type:int 
+local id:b type:int 
+SYM f (FUNC):FUNC <int > PARAM () 
+local tab
+SYM b (VAR):int 
+SYM a (VAR):int 
+{
+(a = 123);
+(b = 0);
+for ((a = 0); (a < 10); (a = (a + 1)))
+(b = (b + a));
+return b;
+}
+SYM fun (FUNC):FUNC <int > PARAM () 
+local tab
+SYM b (VAR):int 
+SYM a (VAR):int 
+{
+(a = 123);
+if ((a != 0))
+(b = 1);
+
+else
+(b = 2);
+while ((a == 1))
+(a = (a - 1));
+}
+SYM spp (VAR):static POINTER to POINTER to int 
+SYM ppfn (VAR):POINTER to POINTER to FUNC <int > PARAM () 
+SYM pfn (VAR):POINTER to FUNC <int > PARAM () 
+SYM ptr (VAR):POINTER to void 
+SYM pp (VAR):POINTER to POINTER to int 
+SYM p (VAR):POINTER to int 
+SYM baz (FUNC):extern FUNC <extern void > PARAM () 
+SYM b (VAR):static int 
+SYM bar (FUNC):FUNC <int > PARAM () 
+local tab
+{
+}
+SYM foo (FUNC):FUNC <void > PARAM () 
+SYM a (VAR):int 

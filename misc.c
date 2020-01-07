@@ -26,9 +26,9 @@ void *alloc(size_t size)
 
 void verror(const char *filename, int line, const char *s, va_list ap)
 {
-    fprintf(stderr, "%s(%d):Error:", filename, line);
-    vfprintf(stderr, s, ap);
-    fprintf(stderr, "\n");
+    fprintf(stdout, "%s(%d):Error:", filename, line);
+    vfprintf(stdout, s, ap);
+    fprintf(stdout, "\n");
     longjmp(g_error_jmp_buf, 1);
 }
 

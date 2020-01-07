@@ -9,7 +9,6 @@ void *ptr;
 int (*pfn)();
 int (**ppfn)();
 static int **spp;
-int *p;
 
 int fun() {
     int a, b;

@@ -9,7 +9,8 @@ test_scanner : test_scanner.o scanner.o node.o symbol.o misc.o
 	$(CC) $(CFLAGS) -o $@ $^
 
 scanner_test : test_scanner
-	-./test_scanner
+	-./test_scanner test_scanner1.c > test_scanner1.output
+	-diff test_scanner1.result test_scanner1.output
 
 test_parser : test_parser.o gen.o node.o parser.o scanner.o symbol.o misc.o
 	$(CC) $(CFLAGS) -o $@ $^

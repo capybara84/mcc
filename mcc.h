@@ -40,9 +40,16 @@ struct type {
     TYPE *type;
 };
 
+extern TYPE g_type_int;
+
 TYPE *new_type(TYPE_KIND kind, STORAGE_CLASS sclass, TYPE *typ);
 TYPE *dup_type(TYPE *typ);
 bool equal_type(const TYPE *tl, const TYPE *tr);
+bool type_is_function(const TYPE *typ);
+bool type_is_int(const TYPE *typ);
+bool type_can_indirection(const TYPE *typ);
+TYPE *type_indir(TYPE *typ);
+TYPE *get_func_return_type(TYPE *typ);
 
 void print_type(const TYPE *typ);
 
@@ -119,13 +126,14 @@ typedef enum {
     NK_RETURN, NK_EXPR,
     NK_ASSIGN, NK_LOR, NK_LAND,
     NK_EQ, NK_NEQ, NK_LT, NK_GT, NK_LE, NK_GE, NK_ADD, NK_SUB,
-    NK_MUL, NK_DIV, NK_ADDR, NK_PTR, NK_MINUS, NK_NOT,
+    NK_MUL, NK_DIV, NK_ADDR, NK_INDIR, NK_MINUS, NK_NOT,
     NK_ID, NK_INT_LIT,
     NK_CALL, NK_ARG,
 } NODE_KIND;
 
 struct node {
     NODE_KIND kind;
+    TYPE *type;
     union {
         struct {
             NODE *n1;
@@ -138,14 +146,16 @@ struct node {
     } u;
 };
 
-NODE *new_node(NODE_KIND kind);
-NODE *new_node1(NODE_KIND kind, NODE *n1);
-NODE *new_node2(NODE_KIND kind, NODE *n1, NODE *n2);
-NODE *new_node3(NODE_KIND kind, NODE *n1, NODE *n2, NODE *n3);
-NODE *new_node4(NODE_KIND kind, NODE *n1, NODE *n2, NODE *n3, NODE *n4);
+NODE *new_node(NODE_KIND kind, TYPE *typ);
+NODE *new_node1(NODE_KIND kind, TYPE *typ, NODE *n1);
+NODE *new_node2(NODE_KIND kind, TYPE *typ, NODE *n1, NODE *n2);
+NODE *new_node3(NODE_KIND kind, TYPE *typ, NODE *n1, NODE *n2, NODE *n3);
+NODE *new_node4(NODE_KIND kind, TYPE *typ,
+                    NODE *n1, NODE *n2, NODE *n3, NODE *n4);
 NODE *link_node(NODE_KIND kind, NODE *node, NODE *top);
 NODE *new_node_sym(NODE_KIND kind, SYMBOL *sym);
 NODE *new_node_lit(NODE_KIND kind, int num);
+
 void print_node(NODE *np);
 
 typedef struct {

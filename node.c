@@ -1,40 +1,41 @@
 #include <assert.h>
 #include "mcc.h"
 
-NODE *new_node(NODE_KIND kind)
+NODE *new_node(NODE_KIND kind, TYPE *typ)
 {
     NODE *np = (NODE*) alloc(sizeof (NODE));
     np->kind = kind;
+    np->type = typ;
     return np;
 }
 
-NODE *new_node1(NODE_KIND kind, NODE *n1)
+NODE *new_node1(NODE_KIND kind, TYPE *typ, NODE *n1)
 {
-    NODE *np = new_node(kind);
+    NODE *np = new_node(kind, typ);
     np->u.link.n1 = n1;
     return np;
 }
 
-NODE *new_node2(NODE_KIND kind, NODE *n1, NODE *n2)
+NODE *new_node2(NODE_KIND kind, TYPE *typ, NODE *n1, NODE *n2)
 {
-    NODE *np = new_node(kind);
+    NODE *np = new_node(kind, typ);
     np->u.link.n1 = n1;
     np->u.link.n2 = n2;
     return np;
 }
 
-NODE *new_node3(NODE_KIND kind, NODE *n1, NODE *n2, NODE *n3)
+NODE *new_node3(NODE_KIND kind, TYPE *typ, NODE *n1, NODE *n2, NODE *n3)
 {
-    NODE *np = new_node(kind);
+    NODE *np = new_node(kind, typ);
     np->u.link.n1 = n1;
     np->u.link.n2 = n2;
     np->u.link.n3 = n3;
     return np;
 }
 
-NODE *new_node4(NODE_KIND kind, NODE *n1, NODE *n2, NODE *n3, NODE *n4)
+NODE *new_node4(NODE_KIND kind, TYPE *typ, NODE *n1, NODE *n2, NODE *n3, NODE *n4)
 {
-    NODE *np = new_node(kind);
+    NODE *np = new_node(kind, typ);
     np->u.link.n1 = n1;
     np->u.link.n2 = n2;
     np->u.link.n3 = n3;
@@ -47,7 +48,7 @@ NODE *link_node(NODE_KIND kind, NODE *node, NODE *top)
     NODE *np;
     NODE *p;
 
-    np = new_node(kind);
+    np = new_node(kind, NULL);
     np->u.link.n1 = node;
     np->u.link.n2 = NULL;
     if (top == NULL)
@@ -61,7 +62,7 @@ NODE *link_node(NODE_KIND kind, NODE *node, NODE *top)
 NODE *new_node_sym(NODE_KIND kind, SYMBOL *sym)
 {
     NODE *np;
-    np = new_node(kind);
+    np = new_node(kind, sym->type);
     np->u.sym = sym;
     return np;
 }
@@ -69,7 +70,7 @@ NODE *new_node_sym(NODE_KIND kind, SYMBOL *sym)
 NODE *new_node_lit(NODE_KIND kind, int num)
 {
     NODE *np;
-    np = new_node(kind);
+    np = new_node(kind, &g_type_int);
     np->u.num = num;
     return np;
 }
@@ -91,7 +92,7 @@ static const char *node_kind_to_str(NODE_KIND kind)
     case NK_MUL:    return "*";
     case NK_DIV:    return "/";
     case NK_ADDR:   return "&";
-    case NK_PTR:    return "*";
+    case NK_INDIR:  return "*";
     case NK_MINUS:  return "-";
     case NK_NOT:    return "!";
     default:        assert(0);
@@ -175,7 +176,7 @@ void print_node(NODE *np)
         printf(")");
         break;
     case NK_ADDR:
-    case NK_PTR:
+    case NK_INDIR:
     case NK_MINUS:
     case NK_NOT:
         printf("(%s", node_kind_to_str(np->kind));

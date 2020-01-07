@@ -2,6 +2,8 @@
 #include <string.h>
 #include "mcc.h"
 
+TYPE g_type_int = { T_INT, SC_DEFAULT, NULL };
+
 static SYMTAB *global_table = NULL;
 static SYMTAB *current_symtab = NULL;
 
@@ -36,6 +38,34 @@ bool equal_type(const TYPE *tl, const TYPE *tr)
         return false;
     return true;
 }
+
+bool type_is_function(const TYPE *typ)
+{
+    return (typ != NULL && typ->kind == T_FUNC);
+}
+
+bool type_is_int(const TYPE *typ)
+{
+    return (typ != NULL && typ->kind == T_INT);
+}
+
+bool type_can_indirection(const TYPE *typ)
+{
+    return (typ != NULL && typ->kind == T_POINTER);
+}
+
+TYPE *type_indir(TYPE *typ)
+{
+    assert(type_can_indirection(typ));
+    return typ->type;
+}
+
+TYPE *get_func_return_type(TYPE *typ)
+{
+    assert(type_is_function(typ));
+    return typ->type;
+}
+
 
 static void print_storage_class(STORAGE_CLASS sc)
 {

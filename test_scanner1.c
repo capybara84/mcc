@@ -1,4 +1,6 @@
-
+/*
+comment
+*/
 abc 123
 
 static extern void int

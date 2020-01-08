@@ -24,7 +24,7 @@ void verror(const char *filename, int line, const char *s, va_list arg);
 void error(const char *filename, int line, const char *s, ...);
 
 typedef enum {
-    T_UNKNOWN, T_VOID, T_NULL, T_INT, T_POINTER, T_FUNC, T_ARG,
+    T_UNKNOWN, T_VOID, T_NULL, T_INT, T_POINTER, T_FUNC, T_PARAM,
 } TYPE_KIND;
 
 typedef struct type TYPE;
@@ -32,7 +32,7 @@ typedef struct type TYPE;
 struct type {
     TYPE_KIND kind;
     TYPE *type;
-    TYPE *arg;
+    TYPE *param;
 };
 
 extern TYPE g_type_int;
@@ -56,6 +56,7 @@ bool type_can_rel(const TYPE *lhs, const TYPE *rhs);
 bool type_can_logical(const TYPE *lhs, const TYPE *rhs);
 bool type_can_assign(const TYPE *lhs, const TYPE *rhs);
 bool type_warn_assign(const TYPE *lhs, const TYPE *rhs);
+TYPE *link_param(TYPE *top, TYPE *param);
 void print_type(const TYPE *typ);
 
 
@@ -133,6 +134,7 @@ const char *scan_token_to_string(SCANNER *scan, TOKEN tk);
 
 
 typedef enum {
+    NK_PARAM,
     NK_COMPOUND, NK_IF, NK_WHILE, NK_FOR, NK_CONTINUE, NK_BREAK,
     NK_RETURN, NK_EXPR,
     NK_ASSIGN, NK_LOR, NK_LAND,

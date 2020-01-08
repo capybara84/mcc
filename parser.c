@@ -728,7 +728,7 @@ static NODE *parse_statement(PARSER *pars)
     return np;
 }
 
-static void parse_parameter_list(PARSER *pars);
+static TYPE *parse_parameter_list(PARSER *pars);
 
 /*
 param_declarator
@@ -757,12 +757,14 @@ static void parse_param_declarator(PARSER *pars, TYPE **pptyp)
         expect(pars, TK_RPAR);
     }
     if (pars->token == TK_LPAR) {
+        TYPE *param;
         next(pars);
         if (pars->token != TK_RPAR) {
-            parse_parameter_list(pars);
-        }
+            param = parse_parameter_list(pars);
+        } else
+            param = NULL;
         expect(pars, TK_RPAR);
-        *pptyp = new_type(T_FUNC, *pptyp, NULL);    /*TODO*/
+        *pptyp = new_type(T_FUNC, *pptyp, param);
         if (typ) {
             TYPE *p = typ;
             while (p && p->type && p->type->kind != T_UNKNOWN)
@@ -794,7 +796,7 @@ parse_declaration_specifiers(PARSER *pars, STORAGE_CLASS *sc, TYPE *typ);
 parameter_declaration
 	= declaration_specifiers [param_declarator]
 */
-static void parse_parameter_declaration(PARSER *pars)
+static TYPE *parse_parameter_declaration(PARSER *pars)
 {
     STORAGE_CLASS sc;
     TYPE *typ;
@@ -810,21 +812,24 @@ static void parse_parameter_declaration(PARSER *pars)
 
     /*TODO sc, typ, id */
     LEAVE("parse_parameter_declaration");
+    return typ;
 }
 
 /*
 parameter_list
 	= parameter_declaration {',' parameter_declaration}
 */
-static void parse_parameter_list(PARSER *pars)
+static TYPE *parse_parameter_list(PARSER *pars)
 {
+    TYPE *param;
     ENTER("parse_parameter_list");
-    parse_parameter_declaration(pars);
+    param = parse_parameter_declaration(pars);
     while (pars->token == TK_COMMA) {
         next(pars);
-        parse_parameter_declaration(pars);
+        param = link_param(param, parse_parameter_declaration(pars));
     }
     LEAVE("parse_parameter_list");
+    return param;
 }
 
 
@@ -858,12 +863,14 @@ static void parse_declarator(PARSER *pars, TYPE **pptyp, char **id)
         parser_error(pars, "syntax error");
     }
     if (pars->token == TK_LPAR) {
+        TYPE *param;
         next(pars);
         if (pars->token != TK_RPAR) {
-            parse_parameter_list(pars);
-        }
+            param = parse_parameter_list(pars);
+        } else
+            param = NULL;
         expect(pars, TK_RPAR);
-        *pptyp = new_type(T_FUNC, *pptyp, NULL);
+        *pptyp = new_type(T_FUNC, *pptyp, param);
         if (typ) {
             TYPE *p = typ;
             while (p && p->type && p->type->kind != T_UNKNOWN)

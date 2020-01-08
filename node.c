@@ -236,6 +236,7 @@ void print_node(NODE *np)
             printf("\n");
         }
         break;
+    case NK_PARAM:
     case NK_ARG:
         print_node(np->u.link.n1);
         if (np->u.link.n2) {

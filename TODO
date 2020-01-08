@@ -1,3 +1,6 @@
+*bugfix
+ function parameter type
+
 *syntax
  function parameter
  declarator_list on external declaration

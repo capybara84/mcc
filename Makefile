@@ -22,6 +22,8 @@ parser_test : test_parser
 	-diff test_parser2.result test_parser2.output
 	-./test_parser test_parser3.c > test_parser3.output
 	-diff test_parser3.result test_parser3.output
+	-./test_parser test_parser4.c > test_parser4.output
+	-diff test_parser4.result test_parser4.output
 
 clean:
 	rm -f mcc *.o test_scanner test_parser *.output

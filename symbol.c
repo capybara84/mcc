@@ -9,18 +9,18 @@ static SYMTAB *global_table = NULL;
 static SYMTAB *current_symtab = NULL;
 
 
-TYPE *new_type(TYPE_KIND kind, TYPE *ref_typ, TYPE *arg)
+TYPE *new_type(TYPE_KIND kind, TYPE *ref_typ, TYPE *param)
 {
     TYPE *typ = (TYPE*) alloc(sizeof (TYPE));
     typ->kind = kind;
     typ->type = ref_typ;
-    typ->arg = arg;
+    typ->param = param;
     return typ;
 }
 
 TYPE *dup_type(TYPE *tp)
 {
-    return new_type(tp->kind, tp->type, tp->arg);
+    return new_type(tp->kind, tp->type, tp->param);
 }
 
 bool equal_type(const TYPE *tl, const TYPE *tr)
@@ -37,7 +37,7 @@ bool equal_type(const TYPE *tl, const TYPE *tr)
         return false;
     if (!equal_type(tl->type, tr->type))
         return false;
-    if (!equal_type(tl->arg, tr->arg))
+    if (!equal_type(tl->param, tr->param))
         return false;
     return true;
 }
@@ -166,6 +166,19 @@ bool type_warn_assign(const TYPE *lhs, const TYPE *rhs)
 }
 
 
+TYPE *link_param(TYPE *top, TYPE *param)
+{
+    TYPE *tp, *p;
+
+    tp = new_type(T_PARAM, param, NULL);
+    if (top == NULL)
+        return tp;
+    for (p = top; p->param != NULL; p = p->param)
+        ;
+    p->param =tp;
+    return top;
+}
+
 void print_type(const TYPE *typ)
 {
     if (typ == NULL)
@@ -192,14 +205,14 @@ void print_type(const TYPE *typ)
             printf("FUNC <");
             print_type(typ->type);
             printf("> (");
-            print_type(typ->arg);
+            print_type(typ->param);
             printf(")");
             break;
-        case T_ARG:
+        case T_PARAM:
             print_type(typ->type);
-            if (typ->arg != NULL)
+            if (typ->param != NULL)
                 printf(", ");
-            print_type(typ->arg);
+            print_type(typ->param);
             break;
         }
     }

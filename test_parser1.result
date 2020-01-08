@@ -1,7 +1,7 @@
-SYM f (FUNC):FUNC <int > PARAM () 
+SYM f (FUNC) DEFAULT:FUNC <int> PARAM ()
 local tab
-SYM b (VAR):int 
-SYM a (VAR):int 
+SYM b (VAR) DEFAULT:int
+SYM a (VAR) DEFAULT:int
 {
 (a = 123);
 (b = 0);
@@ -9,10 +9,10 @@ for ((a = 0); (a < 10); (a = (a + 1)))
 (b = (b + a));
 return b;
 }
-SYM fun (FUNC):FUNC <int > PARAM () 
+SYM fun (FUNC) DEFAULT:FUNC <int> PARAM ()
 local tab
-SYM b (VAR):int 
-SYM a (VAR):int 
+SYM b (VAR) DEFAULT:int
+SYM a (VAR) DEFAULT:int
 {
 (a = 123);
 if ((a != 0))
@@ -23,17 +23,17 @@ else
 while ((a == 1))
 (a = (a - 1));
 }
-SYM spp (VAR):static POINTER to POINTER to int 
-SYM ppfn (VAR):POINTER to POINTER to FUNC <int > PARAM () 
-SYM pfn (VAR):POINTER to FUNC <int > PARAM () 
-SYM ptr (VAR):POINTER to void 
-SYM pp (VAR):POINTER to POINTER to int 
-SYM p (VAR):POINTER to int 
-SYM baz (FUNC):extern FUNC <extern void > PARAM () 
-SYM b (VAR):static int 
-SYM bar (FUNC):FUNC <int > PARAM () 
+SYM spp (VAR) STATIC:POINTER to POINTER to int
+SYM ppfn (VAR) DEFAULT:POINTER to POINTER to FUNC <int> PARAM ()
+SYM pfn (VAR) DEFAULT:POINTER to FUNC <int> PARAM ()
+SYM ptr (VAR) DEFAULT:POINTER to void
+SYM pp (VAR) DEFAULT:POINTER to POINTER to int
+SYM p (VAR) DEFAULT:POINTER to int
+SYM baz (FUNC) EXTERN:FUNC <void> PARAM ()
+SYM b (VAR) STATIC:int
+SYM bar (FUNC) DEFAULT:FUNC <int> PARAM ()
 local tab
 {
 }
-SYM foo (FUNC):FUNC <void > PARAM () 
-SYM a (VAR):int 
+SYM foo (FUNC) DEFAULT:FUNC <void> PARAM ()
+SYM a (VAR) DEFAULT:int

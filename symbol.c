@@ -181,9 +181,8 @@ TYPE *link_param(TYPE *top, TYPE *param)
 
 void print_type(const TYPE *typ)
 {
-    if (typ == NULL)
-        printf("NULL");
-    else {
+    if (typ == NULL) {
+    } else {
         switch (typ->kind) {
         case T_UNKNOWN:
             printf("UNKNOWN");

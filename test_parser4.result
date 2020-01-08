@@ -1,2 +1,2 @@
-SYM sub (FUNC) DEFAULT:FUNC <int> (NULL)
-SYM add (FUNC) DEFAULT:FUNC <int> (NULL)
+SYM sub (FUNC) DEFAULT:FUNC <int> (int, int)
+SYM add (FUNC) DEFAULT:FUNC <int> (int, int)

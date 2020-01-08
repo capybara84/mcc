@@ -806,11 +806,11 @@ static TYPE *parse_parameter_declaration(PARSER *pars)
     typ = new_type(T_UNKNOWN, NULL, NULL);
     sc = SC_DEFAULT;
     parse_declaration_specifiers(pars, &sc, typ);
+    /* TODO check sc */
 
     if (pars->token != TK_COMMA && pars->token != TK_RPAR)
         parse_param_declarator(pars, &typ);
 
-    /*TODO sc, typ, id */
     LEAVE("parse_parameter_declaration");
     return typ;
 }
@@ -823,7 +823,7 @@ static TYPE *parse_parameter_list(PARSER *pars)
 {
     TYPE *param;
     ENTER("parse_parameter_list");
-    param = parse_parameter_declaration(pars);
+    param = link_param(NULL, parse_parameter_declaration(pars));
     while (pars->token == TK_COMMA) {
         next(pars);
         param = link_param(param, parse_parameter_declaration(pars));

@@ -1,8 +1,5 @@
-*bugfix
- function parameter type
-
 *syntax
- function parameter
+ -function parameter
  declarator_list on external declaration
  initializer
  array

@@ -70,7 +70,7 @@ NODE *new_node_sym(NODE_KIND kind, SYMBOL *sym)
 NODE *new_node_int(NODE_KIND kind, int num)
 {
     NODE *np;
-    np = new_node(kind, &g_type_int);
+    np = new_node(kind, (num == 0) ? &g_type_null : &g_type_int);
     np->u.num = num;
     return np;
 }

@@ -26,7 +26,7 @@ void verror(const char *filename, int line, const char *s, va_list arg);
 void error(const char *filename, int line, const char *s, ...);
 
 typedef enum {
-    T_UNKNOWN, T_VOID, T_INT, T_POINTER, T_FUNC,
+    T_UNKNOWN, T_VOID, T_NULL, T_INT, T_POINTER, T_FUNC,
 } TYPE_KIND;
 
 typedef struct type TYPE;
@@ -37,11 +37,13 @@ struct type {
 };
 
 extern TYPE g_type_int;
+extern TYPE g_type_null;
 
 TYPE *new_type(TYPE_KIND kind, TYPE *typ);
 TYPE *dup_type(TYPE *typ);
 bool equal_type(const TYPE *tl, const TYPE *tr);
 bool type_is_void(const TYPE *typ);
+bool type_is_null(const TYPE *typ);
 bool type_is_function(const TYPE *typ);
 bool type_is_int(const TYPE *typ);
 bool type_is_pointer(const TYPE *typ);

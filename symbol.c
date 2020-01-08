@@ -3,6 +3,7 @@
 #include "mcc.h"
 
 TYPE g_type_int = { T_INT, NULL };
+TYPE g_type_null = { T_NULL, NULL };
 
 static SYMTAB *global_table = NULL;
 static SYMTAB *current_symtab = NULL;
@@ -27,6 +28,10 @@ bool equal_type(const TYPE *tl, const TYPE *tr)
         return true;
     if (tl == NULL || tr == NULL)
         return false;
+    if (tl->kind == T_INT && tr->kind == T_NULL)
+        return true;
+    if (tl->kind == T_NULL && tr->kind == T_INT)
+        return true;
     if (tl->kind != tr->kind)
         return false;
     if (!equal_type(tl->type, tr->type))
@@ -39,6 +44,11 @@ bool type_is_void(const TYPE *typ)
     return (typ != NULL && typ->kind == T_VOID);
 }
 
+bool type_is_null(const TYPE *typ)
+{
+    return (typ != NULL && typ->kind == T_NULL);
+}
+
 bool type_is_function(const TYPE *typ)
 {
     return (typ != NULL && typ->kind == T_FUNC);
@@ -46,7 +56,7 @@ bool type_is_function(const TYPE *typ)
 
 bool type_is_int(const TYPE *typ)
 {
-    return (typ != NULL && typ->kind == T_INT);
+    return (typ != NULL && (typ->kind == T_INT || typ->kind == T_NULL));
 }
 
 bool type_is_pointer(const TYPE *typ)
@@ -132,6 +142,8 @@ bool type_can_assign(const TYPE *lhs, const TYPE *rhs)
             && equal_type(lhs->type, rhs)) {
         return true;
     }
+    if (type_is_pointer(lhs) && type_is_null(rhs))
+        return true;
     return false;
 }
 
@@ -162,6 +174,9 @@ void print_type(const TYPE *typ)
             break;
         case T_VOID:
             printf("void");
+            break;
+        case T_NULL:
+            printf("null");
             break;
         case T_INT:
             printf("int");

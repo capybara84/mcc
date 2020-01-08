@@ -2,24 +2,25 @@
 #include <string.h>
 #include "mcc.h"
 
-TYPE g_type_int = { T_INT, NULL };
-TYPE g_type_null = { T_NULL, NULL };
+TYPE g_type_int = { T_INT, NULL, NULL };
+TYPE g_type_null = { T_NULL, NULL, NULL };
 
 static SYMTAB *global_table = NULL;
 static SYMTAB *current_symtab = NULL;
 
 
-TYPE *new_type(TYPE_KIND kind, TYPE *ref_typ)
+TYPE *new_type(TYPE_KIND kind, TYPE *ref_typ, TYPE *arg)
 {
     TYPE *typ = (TYPE*) alloc(sizeof (TYPE));
     typ->kind = kind;
     typ->type = ref_typ;
+    typ->arg = arg;
     return typ;
 }
 
 TYPE *dup_type(TYPE *tp)
 {
-    return new_type(tp->kind, tp->type);
+    return new_type(tp->kind, tp->type, tp->arg);
 }
 
 bool equal_type(const TYPE *tl, const TYPE *tr)
@@ -35,6 +36,8 @@ bool equal_type(const TYPE *tl, const TYPE *tr)
     if (tl->kind != tr->kind)
         return false;
     if (!equal_type(tl->type, tr->type))
+        return false;
+    if (!equal_type(tl->arg, tr->arg))
         return false;
     return true;
 }
@@ -188,7 +191,15 @@ void print_type(const TYPE *typ)
         case T_FUNC:
             printf("FUNC <");
             print_type(typ->type);
-            printf("> PARAM ()");
+            printf("> (");
+            print_type(typ->arg);
+            printf(")");
+            break;
+        case T_ARG:
+            print_type(typ->type);
+            if (typ->arg != NULL)
+                printf(", ");
+            print_type(typ->arg);
             break;
         }
     }

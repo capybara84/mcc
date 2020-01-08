@@ -300,7 +300,7 @@ static NODE *parse_unary_expression(PARSER *pars)
     case NK_ADDR:
         if (!node_can_take_addr(np))
             parser_error(pars, "cannot take the address");
-        np = new_node1(NK_ADDR, new_type(T_POINTER, np->type), np);
+        np = new_node1(NK_ADDR, new_type(T_POINTER, np->type, NULL), np);
         break;
     case NK_INDIR:
         if (!type_is_pointer(np->type))
@@ -537,6 +537,8 @@ static NODE *parse_assignment_expression(PARSER *pars)
         NODE *rhs;
         TYPE *typ;
         next(pars);
+        if (np->kind != NK_ID)
+            parser_error(pars, "invalid left value");
         rhs = parse_assignment_expression(pars);
         typ = type_check_bin(pars, NK_ASSIGN, np->type, rhs->type);
         np = new_node2(NK_ASSIGN, typ, np, rhs);
@@ -726,9 +728,109 @@ static NODE *parse_statement(PARSER *pars)
     return np;
 }
 
+static void parse_parameter_list(PARSER *pars);
+
+/*
+param_declarator
+	= {'*'} [IDENTIFIER | '(' param_declarator ')']
+        ['(' [parameter_list] ')']
+*/
+static void parse_param_declarator(PARSER *pars, TYPE **pptyp)
+{
+    TYPE *typ = NULL;
+
+    ENTER("parse_param_declarator");
+
+    assert(pptyp);
+    assert(*pptyp);
+
+    while (pars->token == TK_STAR) {
+        *pptyp = new_type(T_POINTER, *pptyp, NULL);
+        next(pars);
+    }
+    if (pars->token == TK_ID) {
+        next(pars);
+    } else if (pars->token == TK_LPAR) {
+        typ = new_type(T_UNKNOWN, NULL, NULL);
+        next(pars);
+        parse_param_declarator(pars, &typ);
+        expect(pars, TK_RPAR);
+    }
+    if (pars->token == TK_LPAR) {
+        next(pars);
+        if (pars->token != TK_RPAR) {
+            parse_parameter_list(pars);
+        }
+        expect(pars, TK_RPAR);
+        *pptyp = new_type(T_FUNC, *pptyp, NULL);    /*TODO*/
+        if (typ) {
+            TYPE *p = typ;
+            while (p && p->type && p->type->kind != T_UNKNOWN)
+                p = p->type;
+            if (p->type) {
+                if (p->type->kind == T_UNKNOWN) {
+                    p->type = *pptyp;
+                    *pptyp = typ;
+                } else {
+                    assert(0);
+                }
+            } else {
+                assert(0);
+            }
+        }
+    } else if (typ) {
+        /*TODO*/
+        parser_error(pars, "syntax error (mcc)");
+    }
+
+
+    LEAVE("parse_param_declarator");
+}
+
+static void
+parse_declaration_specifiers(PARSER *pars, STORAGE_CLASS *sc, TYPE *typ);
+
+/*
+parameter_declaration
+	= declaration_specifiers [param_declarator]
+*/
+static void parse_parameter_declaration(PARSER *pars)
+{
+    STORAGE_CLASS sc;
+    TYPE *typ;
+
+    ENTER("parse_parameter_declaration");
+
+    typ = new_type(T_UNKNOWN, NULL, NULL);
+    sc = SC_DEFAULT;
+    parse_declaration_specifiers(pars, &sc, typ);
+
+    if (pars->token != TK_COMMA && pars->token != TK_RPAR)
+        parse_param_declarator(pars, &typ);
+
+    /*TODO sc, typ, id */
+    LEAVE("parse_parameter_declaration");
+}
+
+/*
+parameter_list
+	= parameter_declaration {',' parameter_declaration}
+*/
+static void parse_parameter_list(PARSER *pars)
+{
+    ENTER("parse_parameter_list");
+    parse_parameter_declaration(pars);
+    while (pars->token == TK_COMMA) {
+        next(pars);
+        parse_parameter_declaration(pars);
+    }
+    LEAVE("parse_parameter_list");
+}
+
+
 /*
 declarator
-	= {'*'} (IDENTIFIER | '(' declarator ')') ['(' ')']
+	= {'*'} (IDENTIFIER | '(' declarator ')') ['(' [parameter_list] ')']
 */
 static void parse_declarator(PARSER *pars, TYPE **pptyp, char **id)
 {
@@ -741,14 +843,14 @@ static void parse_declarator(PARSER *pars, TYPE **pptyp, char **id)
     assert(id);
 
     while (pars->token == TK_STAR) {
-        *pptyp = new_type(T_POINTER, *pptyp);
+        *pptyp = new_type(T_POINTER, *pptyp, NULL);
         next(pars);
     }
     if (pars->token == TK_ID) {
-        *id = pars->scan->id;
+        *id = get_id(pars);
         next(pars);
     } else if (pars->token == TK_LPAR) {
-        typ = new_type(T_UNKNOWN, NULL);
+        typ = new_type(T_UNKNOWN, NULL, NULL);
         next(pars);
         parse_declarator(pars, &typ, id);
         expect(pars, TK_RPAR);
@@ -757,8 +859,11 @@ static void parse_declarator(PARSER *pars, TYPE **pptyp, char **id)
     }
     if (pars->token == TK_LPAR) {
         next(pars);
+        if (pars->token != TK_RPAR) {
+            parse_parameter_list(pars);
+        }
         expect(pars, TK_RPAR);
-        *pptyp = new_type(T_FUNC, *pptyp);
+        *pptyp = new_type(T_FUNC, *pptyp, NULL);
         if (typ) {
             TYPE *p = typ;
             while (p && p->type && p->type->kind != T_UNKNOWN)
@@ -853,7 +958,7 @@ static void parse_declaration(PARSER *pars)
 
     ENTER("parse_declaration");
 
-    typ = new_type(T_UNKNOWN, NULL);
+    typ = new_type(T_UNKNOWN, NULL, NULL);
     sc = SC_DEFAULT;
     parse_declaration_specifiers(pars, &sc, typ);
 
@@ -916,7 +1021,7 @@ static bool parse_external_delaration(PARSER *pars)
 
     ENTER("parse_external_delaration");
 
-    typ = new_type(T_UNKNOWN, NULL);
+    typ = new_type(T_UNKNOWN, NULL, NULL);
     sc = SC_DEFAULT;
     parse_declaration_specifiers(pars, &sc, typ);
 

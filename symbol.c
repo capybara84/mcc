@@ -281,7 +281,7 @@ const char *get_storage_class_string(STORAGE_CLASS sc)
     return NULL;
 }
 
-const char *get_kind_string(SYMBOL_KIND kind)
+static const char *get_kind_string(SYMBOL_KIND kind)
 {
     switch (kind) {
     case SK_VAR:    return "VAR";

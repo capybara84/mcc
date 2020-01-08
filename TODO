@@ -1,5 +1,3 @@
-*design
-  move storage_class from TYPE to SYMBOL
 *syntax
  function parameter
  declarator_list on external declaration

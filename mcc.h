@@ -14,8 +14,6 @@ typedef int bool;
 #define false   0
 
 extern jmp_buf g_error_jmp_buf;
-extern FILE *g_stdout;
-extern FILE *g_stderr;
 
 bool is_verbose_level(int n);
 void set_verbose_level(int n);
@@ -91,14 +89,13 @@ struct symtab {
 
 SYMBOL *new_symbol(SYMBOL_KIND kind, STORAGE_CLASS sc,
                     const char *id, TYPE *type);
-
-bool init_symtab(void);
-void term_symtab(void);
+SYMBOL *lookup_symbol_local(const char *id);
+SYMBOL *lookup_symbol(const char *id);
 SYMTAB *new_symtab(SYMTAB *up);
 SYMTAB *enter_scope(SYMTAB *up);
 void leave_scope(void);
-SYMBOL *lookup_symbol_local(const char *id);
-SYMBOL *lookup_symbol(const char *id);
+bool init_symtab(void);
+void term_symtab(void);
 
 const char *get_storage_class_string(STORAGE_CLASS sc);
 void print_symbol(const SYMBOL *sym);

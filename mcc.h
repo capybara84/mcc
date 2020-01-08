@@ -21,6 +21,7 @@ bool is_verbose_level(int n);
 void set_verbose_level(int n);
 void *alloc(size_t size);
 
+void vwarning(const char *filename, int line, const char *s, va_list arg);
 void verror(const char *filename, int line, const char *s, va_list arg);
 void error(const char *filename, int line, const char *s, ...);
 
@@ -51,7 +52,14 @@ bool type_is_int(const TYPE *typ);
 bool type_is_pointer(const TYPE *typ);
 TYPE *type_indir(TYPE *typ);
 TYPE *get_func_return_type(TYPE *typ);
-
+bool type_can_mul_div(const TYPE *lhs, const TYPE *rhs);
+bool type_can_add(const TYPE *lhs, const TYPE *rhs);
+bool type_can_sub(const TYPE *lhs, const TYPE *rhs);
+bool type_warn_rel(const TYPE *lhs, const TYPE *rhs);
+bool type_can_rel(const TYPE *lhs, const TYPE *rhs);
+bool type_can_logical(const TYPE *lhs, const TYPE *rhs);
+bool type_can_assign(const TYPE *lhs, const TYPE *rhs);
+bool type_warn_assign(const TYPE *lhs, const TYPE *rhs);
 void print_type(const TYPE *typ);
 
 

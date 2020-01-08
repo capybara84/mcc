@@ -78,6 +78,14 @@ bool close_parser(PARSER *pars)
     return true;
 }
 
+static void parser_warning(PARSER *pars, const char *s, ...)
+{
+    va_list ap;
+    va_start(ap, s);
+    vwarning(pars->scan->filename, pars->scan->line, s, ap);
+    va_end(ap);
+}
+
 static void parser_error(PARSER *pars, const char *s, ...)
 {
     va_list ap;
@@ -322,70 +330,51 @@ static TYPE *type_check_bin(PARSER *pars, NODE_KIND kind, TYPE *lhs, TYPE *rhs)
     switch (kind) {
     case NK_MUL:
     case NK_DIV:
-        if (type_is_int(lhs) && type_is_int(rhs))
-            return &g_type_int;
+        if (type_can_mul_div(lhs, rhs))
+            return lhs;
         break;
     case NK_ADD:
-        if (type_is_int(lhs) && type_is_int(rhs))
-            return &g_type_int;
-        if (type_is_pointer(lhs) || type_is_function(lhs)) {
-            if (type_is_int(rhs))
-                return &g_type_int;
-        } else if (type_is_pointer(rhs) || type_is_function(rhs)) {
-            if (type_is_int(lhs))
-                return &g_type_int;
-        }
+        if (type_can_add(lhs, rhs))
+            return lhs;
         break;
     case NK_SUB:
-        if (type_is_int(lhs) && type_is_int(rhs))
-            return &g_type_int;
-        if (type_is_pointer(lhs) || type_is_function(lhs)) {
-            if (type_is_int(rhs))
-                return &g_type_int;
-        }
+        if (type_can_sub(lhs, rhs))
+            return lhs;
         break;
     case NK_LT:
     case NK_GT:
     case NK_LE:
     case NK_GE:
-        if (type_is_int(lhs) && type_is_int(rhs))
-            return &g_type_int;
-        if (type_is_pointer(lhs) && type_is_pointer(rhs))
-            return &g_type_int;
-        if (type_is_function(lhs) && type_is_function(rhs))
-            return &g_type_int;
-        break;
     case NK_EQ:
     case NK_NEQ:
-        if (type_is_int(lhs) && type_is_int(rhs))
+        if (type_warn_rel(lhs, rhs)) {
+            parser_warning(pars, "incompatible pointer types");
             return &g_type_int;
-        if (type_is_pointer(lhs) && type_is_pointer(rhs))
-            return &g_type_int;
-        if (type_is_function(lhs) && type_is_function(rhs))
-            return &g_type_int;
-        if (type_is_pointer(lhs) && type_is_int(rhs))
-            return &g_type_int;
-        if (type_is_int(lhs) && type_is_pointer(rhs))
+        }
+        if (type_can_rel(lhs, rhs))
             return &g_type_int;
         break;
     case NK_LAND:
     case NK_LOR:
-        if (type_is_void(lhs) || type_is_void(rhs))
-            parser_error(pars, "type void");
+        if (type_can_logical(lhs, rhs))
+            return &g_type_int;
+        parser_error(pars, "type error");
         return &g_type_int;
     case NK_ASSIGN:
-        if (type_is_int(lhs) && type_is_int(rhs))
-            return &g_type_int;
-        if ((type_is_pointer(lhs) && type_is_int(rhs))
-                || (type_is_pointer(lhs) && type_is_function(rhs))
-                || (type_is_int(lhs) && type_is_pointer(rhs))
-                || (type_is_int(lhs) && type_is_function(rhs)))
+        if (type_can_assign(lhs, rhs))
             return lhs;
+        if (type_warn_assign(lhs, rhs)) {
+            parser_warning(pars, "incompatible pointer types");
+            return lhs;
+        }
         break;
     default: assert(0);
     }
-    printf("lhs:"); print_type(lhs); printf("\n");
-    printf("rhs:"); print_type(rhs); printf("\n");
+
+    if (is_verbose_level(1)) {
+        printf("lhs:"); print_type(lhs); printf("\n");
+        printf("rhs:"); print_type(rhs); printf("\n");
+    }
     parser_error(pars, "'%s' type mismatch", node_kind_to_str(kind));
     return &g_type_int;
 }
@@ -880,13 +869,13 @@ static void parse_declaration(PARSER *pars)
             printf("\n");
         }
 
-        symkind = (typ->kind == T_FUNC) ? SK_FUNC : SK_VAR;
+        symkind = (ntyp->kind == T_FUNC) ? SK_FUNC : SK_VAR;
         if (symkind == SK_FUNC) {
             SYMBOL *same = lookup_symbol(id);
             if (same) {
                 if (same->kind != SK_FUNC) {
                     parser_error(pars, "'%s' differenct kind of symbol", id);
-                } else if (!equal_type(same->type, typ)) {
+                } else if (!equal_type(same->type, ntyp)) {
                     parser_error(pars, "'%s' type mismatch", id);
                 } else
                     already = true;
@@ -898,7 +887,7 @@ static void parse_declaration(PARSER *pars)
             }
         }
         if (!already)
-            new_symbol(symkind, id, typ);
+            new_symbol(symkind, id, ntyp);
 
         if (pars->token != TK_COMMA)
             break;

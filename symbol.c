@@ -19,9 +19,7 @@ TYPE *new_type(TYPE_KIND kind, STORAGE_CLASS sclass, TYPE *ref_typ)
 
 TYPE *dup_type(TYPE *tp)
 {
-    TYPE *np = new_type(T_UNKNOWN, SC_DEFAULT, NULL);
-    memcpy(np, tp, sizeof (TYPE));
-    return np;
+    return new_type(tp->kind, tp->sclass, tp->type);
 }
 
 bool equal_type(const TYPE *tl, const TYPE *tr)
@@ -69,6 +67,90 @@ TYPE *get_func_return_type(TYPE *typ)
 {
     assert(type_is_function(typ));
     return typ->type;
+}
+
+bool type_can_mul_div(const TYPE *lhs, const TYPE *rhs)
+{
+    return type_is_int(lhs) && type_is_int(rhs);
+}
+
+bool type_can_add(const TYPE *lhs, const TYPE *rhs)
+{
+    if (type_is_int(lhs) && type_is_int(rhs))
+        return true;
+    if ((type_is_pointer(lhs) || type_is_function(lhs)) && type_is_int(rhs))
+        return true;
+    else if ((type_is_pointer(rhs) || type_is_function(rhs))
+                && type_is_int(lhs))
+        return true;
+    return false;
+}
+
+bool type_can_sub(const TYPE *lhs, const TYPE *rhs)
+{
+    if (type_is_int(lhs) && type_is_int(rhs))
+        return true;
+    if ((type_is_pointer(lhs) || type_is_function(lhs)) && type_is_int(rhs))
+        return true;
+    return false;
+}
+
+bool type_warn_rel(const TYPE *lhs, const TYPE *rhs)
+{
+    if (type_is_pointer(lhs) && type_is_pointer(rhs)
+                && !equal_type(lhs, rhs))
+        return true;
+    if ((type_is_pointer(lhs) && type_is_function(rhs))
+            || (type_is_function(lhs) && type_is_pointer(rhs)))
+        return true;
+    return false;
+}
+
+bool type_can_rel(const TYPE *lhs, const TYPE *rhs)
+{
+    if (type_is_void(lhs) || type_is_void(rhs))
+        return false;
+    if (equal_type(lhs, rhs))
+        return true;
+    if ((type_is_pointer(lhs) && type_is_int(rhs))
+            || (type_is_int(lhs) && type_is_pointer(rhs)))
+        return true;
+    return false;
+}
+
+bool type_can_logical(const TYPE *lhs, const TYPE *rhs)
+{
+    return !type_is_void(lhs) && !type_is_void(rhs);
+}
+
+bool type_can_assign(const TYPE *lhs, const TYPE *rhs)
+{
+    if (type_is_void(lhs) || type_is_void(rhs))
+        return false;
+    if (equal_type(lhs, rhs))
+        return true;
+    if (type_is_pointer(lhs) && type_is_pointer(rhs))
+        return type_can_assign(lhs->type, rhs->type);
+    if (type_is_pointer(lhs) && type_is_function(rhs)
+            && equal_type(lhs->type, rhs)) {
+        return true;
+    }
+    return false;
+}
+
+bool type_warn_assign(const TYPE *lhs, const TYPE *rhs)
+{
+    if ((type_is_pointer(lhs) && type_is_int(rhs))
+            || (type_is_pointer(lhs) && type_is_function(rhs))
+            || (type_is_int(lhs) && type_is_pointer(rhs))
+            || (type_is_int(lhs) && type_is_function(rhs))) {
+        return true;
+    }
+    if (type_is_pointer(lhs) && type_is_pointer(rhs)
+            && !equal_type(lhs, rhs)) {
+        return true;
+    }
+    return false;
 }
 
 
@@ -139,6 +221,7 @@ SYMBOL *new_symbol(SYMBOL_KIND kind, char *id, TYPE *type)
     p->has_body = false;
     p->body_node = NULL;
     p->tab = NULL;
+
     return p;
 }
 

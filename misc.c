@@ -24,9 +24,16 @@ void *alloc(size_t size)
     return p;
 }
 
+void vwarning(const char *filename, int line, const char *s, va_list ap)
+{
+    fprintf(stdout, "%s(%d):warning:", filename, line);
+    vfprintf(stdout, s, ap);
+    fprintf(stdout, "\n");
+}
+
 void verror(const char *filename, int line, const char *s, va_list ap)
 {
-    fprintf(stdout, "%s(%d):Error:", filename, line);
+    fprintf(stdout, "%s(%d):error:", filename, line);
     vfprintf(stdout, s, ap);
     fprintf(stdout, "\n");
     longjmp(g_error_jmp_buf, 1);

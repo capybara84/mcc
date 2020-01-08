@@ -24,7 +24,7 @@ parser_test : test_parser
 	-diff test_parser3.result test_parser3.output
 
 clean:
-	rm -f mcc test_scanner test_parser *.o
+	rm -f mcc *.o test_scanner test_parser *.output
 
 main.o : mcc.h
 gen.o : mcc.h

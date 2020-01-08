@@ -1,0 +1,24 @@
+*design
+  move storage_class from TYPE to SYMBOL
+*syntax
+ function parameter
+ declarator_list on external declaration
+ initializer
+ array
+ char,short,unsigned
+ float,double
+ switch,case
+ goto,label
+ assignment operator
+ conditional expr
+ operator
+ inc,dec
+ sizeof
+ cast
+ enum
+ struct,union
+ . ->
+ ...
+ type_qualifier
+
+*code gen

@@ -26,10 +26,6 @@ void verror(const char *filename, int line, const char *s, va_list arg);
 void error(const char *filename, int line, const char *s, ...);
 
 typedef enum {
-    SC_DEFAULT, SC_STATIC, SC_EXTERN
-} STORAGE_CLASS;
-
-typedef enum {
     T_UNKNOWN, T_VOID, T_INT, T_POINTER, T_FUNC,
 } TYPE_KIND;
 
@@ -37,13 +33,12 @@ typedef struct type TYPE;
 
 struct type {
     TYPE_KIND kind;
-    STORAGE_CLASS sclass;
     TYPE *type;
 };
 
 extern TYPE g_type_int;
 
-TYPE *new_type(TYPE_KIND kind, STORAGE_CLASS sclass, TYPE *typ);
+TYPE *new_type(TYPE_KIND kind, TYPE *typ);
 TYPE *dup_type(TYPE *typ);
 bool equal_type(const TYPE *tl, const TYPE *tr);
 bool type_is_void(const TYPE *typ);
@@ -66,6 +61,10 @@ void print_type(const TYPE *typ);
 typedef struct node NODE;
 
 typedef enum {
+    SC_DEFAULT, SC_STATIC, SC_EXTERN
+} STORAGE_CLASS;
+
+typedef enum {
     SK_VAR, SK_FUNC,
 } SYMBOL_KIND;
 
@@ -74,8 +73,9 @@ typedef struct symtab SYMTAB;
 
 struct symbol {
     SYMBOL *next;
+    STORAGE_CLASS sclass;
     SYMBOL_KIND kind;
-    char *id;
+    const char *id;
     TYPE *type;
     bool has_body;
     NODE *body_node;
@@ -87,7 +87,8 @@ struct symtab {
     SYMTAB *up;
 };
 
-SYMBOL *new_symbol(SYMBOL_KIND kind, char *id, TYPE *type);
+SYMBOL *new_symbol(SYMBOL_KIND kind, STORAGE_CLASS sc,
+                    const char *id, TYPE *type);
 
 bool init_symtab(void);
 void term_symtab(void);
@@ -97,6 +98,7 @@ void leave_scope(void);
 SYMBOL *lookup_symbol_local(const char *id);
 SYMBOL *lookup_symbol(const char *id);
 
+const char *get_storage_class_string(STORAGE_CLASS sc);
 void print_symbol(const SYMBOL *sym);
 void print_symtab(const SYMTAB *tab);
 void print_global_symtab(void);

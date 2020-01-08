@@ -300,7 +300,7 @@ static NODE *parse_unary_expression(PARSER *pars)
     case NK_ADDR:
         if (!node_can_take_addr(np))
             parser_error(pars, "cannot take the address");
-        np = new_node1(NK_ADDR, new_type(T_POINTER, SC_DEFAULT, np->type), np);
+        np = new_node1(NK_ADDR, new_type(T_POINTER, np->type), np);
         break;
     case NK_INDIR:
         if (!type_is_pointer(np->type))
@@ -741,14 +741,14 @@ static void parse_declarator(PARSER *pars, TYPE **pptyp, char **id)
     assert(id);
 
     while (pars->token == TK_STAR) {
-        *pptyp = new_type(T_POINTER, (*pptyp)->sclass, *pptyp);
+        *pptyp = new_type(T_POINTER, *pptyp);
         next(pars);
     }
     if (pars->token == TK_ID) {
         *id = pars->scan->id;
         next(pars);
     } else if (pars->token == TK_LPAR) {
-        typ = new_type(T_UNKNOWN, SC_DEFAULT, NULL);
+        typ = new_type(T_UNKNOWN, NULL);
         next(pars);
         parse_declarator(pars, &typ, id);
         expect(pars, TK_RPAR);
@@ -758,7 +758,7 @@ static void parse_declarator(PARSER *pars, TYPE **pptyp, char **id)
     if (pars->token == TK_LPAR) {
         next(pars);
         expect(pars, TK_RPAR);
-        *pptyp = new_type(T_FUNC, (*pptyp)->sclass, *pptyp);
+        *pptyp = new_type(T_FUNC, *pptyp);
         if (typ) {
             TYPE *p = typ;
             while (p && p->type && p->type->kind != T_UNKNOWN)
@@ -789,20 +789,21 @@ storage_class_specifier
 type_specifier
 	= VOID | INT
 */
-static void parse_declaration_specifier(PARSER *pars, TYPE *typ)
+static void
+parse_declaration_specifier(PARSER *pars, STORAGE_CLASS* sc, TYPE *typ)
 {
     ENTER("parse_declaration_specifier");
     switch (pars->token) {
     case TK_STATIC:
-        if (typ->sclass != SC_DEFAULT)
+        if (*sc != SC_DEFAULT)
             parser_error(pars, "invalid 'static'");
-        typ->sclass = SC_STATIC;
+        *sc = SC_STATIC;
         next(pars);
         break;
     case TK_EXTERN:
-        if (typ->sclass != SC_DEFAULT)
+        if (*sc != SC_DEFAULT)
             parser_error(pars, "invalid 'extern'");
-        typ->sclass = SC_EXTERN;
+        *sc = SC_EXTERN;
         next(pars);
         break;
     case TK_VOID:
@@ -828,12 +829,13 @@ static void parse_declaration_specifier(PARSER *pars, TYPE *typ)
 declaration_specifiers
     = declaration_specifier {declaration_specifier}
 */
-static void parse_declaration_specifiers(PARSER *pars, TYPE *typ)
+static void
+parse_declaration_specifiers(PARSER *pars, STORAGE_CLASS *sc, TYPE *typ)
 {
     ENTER("parse_declaration_specifiers");
-    parse_declaration_specifier(pars, typ);
+    parse_declaration_specifier(pars, sc, typ);
     while (is_declaration_specifier(pars)) {
-        parse_declaration_specifier(pars, typ);
+        parse_declaration_specifier(pars, sc, typ);
     }
     LEAVE("parse_declaration_specifiers");
 }
@@ -846,12 +848,14 @@ declarator_list
 */
 static void parse_declaration(PARSER *pars)
 {
+    STORAGE_CLASS sc;
     TYPE *typ;
 
     ENTER("parse_declaration");
 
-    typ = new_type(T_UNKNOWN, SC_DEFAULT, NULL);
-    parse_declaration_specifiers(pars, typ);
+    typ = new_type(T_UNKNOWN, NULL);
+    sc = SC_DEFAULT;
+    parse_declaration_specifiers(pars, &sc, typ);
 
     for (;;) {
         char *id;
@@ -864,7 +868,7 @@ static void parse_declaration(PARSER *pars)
 
 
         if (is_verbose_level(1)) {
-            printf("local id:%s type:", id);
+            printf("local id:%s %s type:", id, get_storage_class_string(sc));
             print_type(ntyp);
             printf("\n");
         }
@@ -887,7 +891,7 @@ static void parse_declaration(PARSER *pars)
             }
         }
         if (!already)
-            new_symbol(symkind, id, ntyp);
+            new_symbol(symkind, sc, id, ntyp);
 
         if (pars->token != TK_COMMA)
             break;
@@ -904,6 +908,7 @@ external_declaration
 */
 static bool parse_external_delaration(PARSER *pars)
 {
+    STORAGE_CLASS sc;
     SYMBOL *sym = NULL;
     TYPE *typ;
     char *id;
@@ -911,8 +916,9 @@ static bool parse_external_delaration(PARSER *pars)
 
     ENTER("parse_external_delaration");
 
-    typ = new_type(T_UNKNOWN, SC_DEFAULT, NULL);
-    parse_declaration_specifiers(pars, typ);
+    typ = new_type(T_UNKNOWN, NULL);
+    sc = SC_DEFAULT;
+    parse_declaration_specifiers(pars, &sc, typ);
 
     parse_declarator(pars, &typ, &id);
 
@@ -934,7 +940,7 @@ static bool parse_external_delaration(PARSER *pars)
 
     if (pars->token == TK_SEMI) {
         if (sym == NULL)
-            sym = new_symbol(symkind, id, typ);
+            sym = new_symbol(symkind, sc, id, typ);
         next(pars);
     } else if (pars->token == TK_BEGIN) {
         NODE *body;
@@ -943,7 +949,7 @@ static bool parse_external_delaration(PARSER *pars)
         if (sym && sym->has_body)
             parser_error(pars, "'%s' redefinition", id);
         else
-            sym = new_symbol(SK_FUNC, id, typ);
+            sym = new_symbol(SK_FUNC, sc, id, typ);
         body = parse_compound_statement(pars, &sym->tab);
         /*TODO calc local table size */
         sym->has_body = true;

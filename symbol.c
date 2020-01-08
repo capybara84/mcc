@@ -2,24 +2,23 @@
 #include <string.h>
 #include "mcc.h"
 
-TYPE g_type_int = { T_INT, SC_DEFAULT, NULL };
+TYPE g_type_int = { T_INT, NULL };
 
 static SYMTAB *global_table = NULL;
 static SYMTAB *current_symtab = NULL;
 
 
-TYPE *new_type(TYPE_KIND kind, STORAGE_CLASS sclass, TYPE *ref_typ)
+TYPE *new_type(TYPE_KIND kind, TYPE *ref_typ)
 {
     TYPE *typ = (TYPE*) alloc(sizeof (TYPE));
     typ->kind = kind;
-    typ->sclass = sclass;
     typ->type = ref_typ;
     return typ;
 }
 
 TYPE *dup_type(TYPE *tp)
 {
-    return new_type(tp->kind, tp->sclass, tp->type);
+    return new_type(tp->kind, tp->type);
 }
 
 bool equal_type(const TYPE *tl, const TYPE *tr)
@@ -29,8 +28,6 @@ bool equal_type(const TYPE *tl, const TYPE *tr)
     if (tl == NULL || tr == NULL)
         return false;
     if (tl->kind != tr->kind)
-        return false;
-    if (tl->sclass != tr->sclass)
         return false;
     if (!equal_type(tl->type, tr->type))
         return false;
@@ -154,60 +151,37 @@ bool type_warn_assign(const TYPE *lhs, const TYPE *rhs)
 }
 
 
-static void print_storage_class(STORAGE_CLASS sc)
-{
-    switch (sc) {
-    case SC_DEFAULT:
-/*
-        printf("default ");
-*/
-        break;
-    case SC_STATIC:
-        printf("static ");
-        break;
-    case SC_EXTERN:
-        printf("extern ");
-        break;
-    }
-}
-
-static void print_type_sclass(const TYPE *typ, bool sclass)
+void print_type(const TYPE *typ)
 {
     if (typ == NULL)
         printf("NULL");
     else {
-        if (sclass)
-            print_storage_class(typ->sclass);
         switch (typ->kind) {
         case T_UNKNOWN:
-            printf("UNKNOWN ");
+            printf("UNKNOWN");
             break;
         case T_VOID:
-            printf("void ");
+            printf("void");
             break;
         case T_INT:
-            printf("int ");
+            printf("int");
             break;
         case T_POINTER:
             printf("POINTER to ");
-            print_type_sclass(typ->type, false);
+            print_type(typ->type);
             break;
         case T_FUNC:
             printf("FUNC <");
-            print_type_sclass(typ->type, true);
-            printf("> PARAM () ");
+            print_type(typ->type);
+            printf("> PARAM ()");
             break;
         }
     }
 }
 
-void print_type(const TYPE *typ)
-{
-    print_type_sclass(typ, true);
-}
 
-
-SYMBOL *new_symbol(SYMBOL_KIND kind, char *id, TYPE *type)
+SYMBOL *
+new_symbol(SYMBOL_KIND kind, STORAGE_CLASS sc, const char *id, TYPE *type)
 {
     SYMBOL *p;
 
@@ -215,6 +189,7 @@ SYMBOL *new_symbol(SYMBOL_KIND kind, char *id, TYPE *type)
     p = (SYMBOL*) alloc(sizeof (SYMBOL));
     p->next = current_symtab->sym;
     current_symtab->sym = p;
+    p->sclass = sc;
     p->kind = kind;
     p->id = id;
     p->type = type;
@@ -281,15 +256,23 @@ void term_symtab(void)
 {
 }
 
+const char *get_storage_class_string(STORAGE_CLASS sc)
+{
+    switch (sc) {
+    case SC_DEFAULT:    return "DEFAULT";
+    case SC_STATIC:     return "STATIC";
+    case SC_EXTERN:     return "EXTERN";
+    }
+    return NULL;
+}
+
 const char *get_kind_string(SYMBOL_KIND kind)
 {
     switch (kind) {
     case SK_VAR:    return "VAR";
     case SK_FUNC:   return "FUNC";
-    default:
-        assert(0);
     }
-    return "";
+    return NULL;
 }
 
 void print_symtab_1(const SYMTAB *tab)
@@ -304,7 +287,8 @@ void print_symtab_1(const SYMTAB *tab)
 
 void print_symbol(const SYMBOL *sym)
 {
-    printf("SYM %s (%s):", sym->id, get_kind_string(sym->kind));
+    printf("SYM %s (%s) %s:", sym->id, get_kind_string(sym->kind),
+        get_storage_class_string(sym->sclass));
     print_type(sym->type);
     printf("\n");
     if (sym->kind == SK_FUNC && sym->has_body) {

@@ -198,6 +198,11 @@ static NODE *parse_primary_expression(PARSER *pars)
                 parser_error(pars, "undefined symbol '%s'", id);
             }
             np = new_node_sym(NK_ID, sym);
+            if (is_verbose_level(1)) {
+                printf("sym:%s:", id);
+                print_type(sym->type);
+                printf("\n");
+            }
         }
         break;
     case TK_INT_LIT:
@@ -317,66 +322,71 @@ static TYPE *type_check_bin(PARSER *pars, NODE_KIND kind, TYPE *lhs, TYPE *rhs)
     switch (kind) {
     case NK_MUL:
     case NK_DIV:
-        if (!type_is_int(lhs) || !type_is_int(rhs))
-            parser_error(pars, "'%s' type mismatch", node_kind_to_str(kind));
+        if (type_is_int(lhs) && type_is_int(rhs))
+            return &g_type_int;
         break;
     case NK_ADD:
         if (type_is_int(lhs) && type_is_int(rhs))
-            break;
+            return &g_type_int;
         if (type_is_pointer(lhs) || type_is_function(lhs)) {
             if (type_is_int(rhs))
-                break;
+                return &g_type_int;
         } else if (type_is_pointer(rhs) || type_is_function(rhs)) {
             if (type_is_int(lhs))
-                break;
+                return &g_type_int;
         }
-        parser_error(pars, "'+' type mismatch");
         break;
     case NK_SUB:
         if (type_is_int(lhs) && type_is_int(rhs))
-            break;
+            return &g_type_int;
         if (type_is_pointer(lhs) || type_is_function(lhs)) {
             if (type_is_int(rhs))
-                break;
+                return &g_type_int;
         }
-        parser_error(pars, "'-' type mismatch");
         break;
     case NK_LT:
     case NK_GT:
     case NK_LE:
     case NK_GE:
         if (type_is_int(lhs) && type_is_int(rhs))
-            break;
+            return &g_type_int;
         if (type_is_pointer(lhs) && type_is_pointer(rhs))
-            break;
+            return &g_type_int;
         if (type_is_function(lhs) && type_is_function(rhs))
-            break;
-        parser_error(pars, "'%s' type mismatch", node_kind_to_str(kind));
+            return &g_type_int;
         break;
     case NK_EQ:
     case NK_NEQ:
         if (type_is_int(lhs) && type_is_int(rhs))
-            break;
+            return &g_type_int;
         if (type_is_pointer(lhs) && type_is_pointer(rhs))
-            break;
+            return &g_type_int;
         if (type_is_function(lhs) && type_is_function(rhs))
-            break;
+            return &g_type_int;
         if (type_is_pointer(lhs) && type_is_int(rhs))
-            break;
+            return &g_type_int;
         if (type_is_int(lhs) && type_is_pointer(rhs))
-            break;
-        parser_error(pars, "'%s' type mismatch", node_kind_to_str(kind));
+            return &g_type_int;
         break;
     case NK_LAND:
     case NK_LOR:
         if (type_is_void(lhs) || type_is_void(rhs))
             parser_error(pars, "type void");
-        break;
+        return &g_type_int;
     case NK_ASSIGN:
-        /*TODO check left value */
+        if (type_is_int(lhs) && type_is_int(rhs))
+            return &g_type_int;
+        if ((type_is_pointer(lhs) && type_is_int(rhs))
+                || (type_is_pointer(lhs) && type_is_function(rhs))
+                || (type_is_int(lhs) && type_is_pointer(rhs))
+                || (type_is_int(lhs) && type_is_function(rhs)))
+            return lhs;
         break;
     default: assert(0);
     }
+    printf("lhs:"); print_type(lhs); printf("\n");
+    printf("rhs:"); print_type(rhs); printf("\n");
+    parser_error(pars, "'%s' type mismatch", node_kind_to_str(kind));
     return &g_type_int;
 }
 
@@ -863,11 +873,12 @@ static void parse_declaration(PARSER *pars)
         ntyp = dup_type(typ);
         parse_declarator(pars, &ntyp, &id);
 
-/*
-printf("local id:%s type:", id);
-print_type(ntyp);
-printf("\n");
-*/
+
+        if (is_verbose_level(1)) {
+            printf("local id:%s type:", id);
+            print_type(ntyp);
+            printf("\n");
+        }
 
         symkind = (typ->kind == T_FUNC) ? SK_FUNC : SK_VAR;
         if (symkind == SK_FUNC) {

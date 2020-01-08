@@ -74,12 +74,13 @@ SCANNER *open_scanner(const char *filename)
     if (fseek(fp, 0, SEEK_SET) != 0)
         return NULL;
 
-    s = (char*) alloc(size * sizeof (char));
+    s = (char*) alloc((size+1) * sizeof (char));
     if (fread(s, size, 1, fp) != 1) {
         fclose(fp);
         free(s);
         return NULL;
     }
+    s[size] = '\0';
     fclose(fp);
     return open_scanner_text(filename, s);
 }
@@ -120,6 +121,7 @@ static int next_char(SCANNER *scan)
 /*
     printf("%s(%d):next_char: '%c'\n", scan->filename, scan->line, scan->ch);
 */
+
     return scan->ch;
 }
 
@@ -164,6 +166,23 @@ static TOKEN scan_num(SCANNER *scan)
     return TK_INT_LIT;
 }
 
+static void skip_comment(SCANNER *scan)
+{
+    next_char(scan);    /* skip '*' */
+    for (;;) {
+        if (scan->ch == EOF) {
+            error(scan->filename, scan->line, "unterminated comment");
+            return;
+        }
+        if (scan->ch != '*')
+            next_char(scan);
+        else if (next_char(scan) == '/') {
+            next_char(scan);
+            break;
+        }
+    }
+}
+
 TOKEN next_token(SCANNER *scan)
 {
     for (;;) {
@@ -176,6 +195,17 @@ TOKEN next_token(SCANNER *scan)
         if (isdigit(scan->ch))
             return scan_num(scan);
         switch (scan->ch) {
+        case '#':
+            /* skip line */
+            while (scan->ch != EOF && scan->ch != '\n')
+                next_char(scan);
+            continue;
+        case '/':
+            if (next_char(scan) == '*') {
+                skip_comment(scan);
+                continue;
+            }
+            return TK_SLASH;
         case ',':   next_char(scan);    return TK_COMMA;
         case ';':   next_char(scan);    return TK_SEMI;
         case '(':   next_char(scan);    return TK_LPAR;
@@ -183,7 +213,6 @@ TOKEN next_token(SCANNER *scan)
         case '{':   next_char(scan);    return TK_BEGIN;
         case '}':   next_char(scan);    return TK_END;
         case '*':   next_char(scan);    return TK_STAR;
-        case '/':   next_char(scan);    return TK_SLASH;
         case '+':   next_char(scan);    return TK_PLUS;
         case '-':   next_char(scan);    return TK_MINUS;
         case '|':

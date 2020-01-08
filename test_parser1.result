@@ -1,7 +1,3 @@
-local id:a type:int 
-local id:b type:int 
-local id:a type:int 
-local id:b type:int 
 SYM f (FUNC):FUNC <int > PARAM () 
 local tab
 SYM b (VAR):int 

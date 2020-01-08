@@ -21,6 +21,7 @@ bool is_verbose_level(int n);
 void set_verbose_level(int n);
 void *alloc(size_t size);
 
+void vwarning(const char *filename, int line, const char *s, va_list arg);
 void verror(const char *filename, int line, const char *s, va_list arg);
 void error(const char *filename, int line, const char *s, ...);
 
@@ -40,10 +41,25 @@ struct type {
     TYPE *type;
 };
 
+extern TYPE g_type_int;
+
 TYPE *new_type(TYPE_KIND kind, STORAGE_CLASS sclass, TYPE *typ);
 TYPE *dup_type(TYPE *typ);
 bool equal_type(const TYPE *tl, const TYPE *tr);
-
+bool type_is_void(const TYPE *typ);
+bool type_is_function(const TYPE *typ);
+bool type_is_int(const TYPE *typ);
+bool type_is_pointer(const TYPE *typ);
+TYPE *type_indir(TYPE *typ);
+TYPE *get_func_return_type(TYPE *typ);
+bool type_can_mul_div(const TYPE *lhs, const TYPE *rhs);
+bool type_can_add(const TYPE *lhs, const TYPE *rhs);
+bool type_can_sub(const TYPE *lhs, const TYPE *rhs);
+bool type_warn_rel(const TYPE *lhs, const TYPE *rhs);
+bool type_can_rel(const TYPE *lhs, const TYPE *rhs);
+bool type_can_logical(const TYPE *lhs, const TYPE *rhs);
+bool type_can_assign(const TYPE *lhs, const TYPE *rhs);
+bool type_warn_assign(const TYPE *lhs, const TYPE *rhs);
 void print_type(const TYPE *typ);
 
 
@@ -76,8 +92,9 @@ SYMBOL *new_symbol(SYMBOL_KIND kind, char *id, TYPE *type);
 bool init_symtab(void);
 void term_symtab(void);
 SYMTAB *new_symtab(SYMTAB *up);
-void enter_function(SYMBOL *sym);
-void leave_function(void);
+SYMTAB *enter_scope(SYMTAB *up);
+void leave_scope(void);
+SYMBOL *lookup_symbol_local(const char *id);
 SYMBOL *lookup_symbol(const char *id);
 
 void print_symbol(const SYMBOL *sym);
@@ -118,13 +135,14 @@ typedef enum {
     NK_RETURN, NK_EXPR,
     NK_ASSIGN, NK_LOR, NK_LAND,
     NK_EQ, NK_NEQ, NK_LT, NK_GT, NK_LE, NK_GE, NK_ADD, NK_SUB,
-    NK_MUL, NK_DIV, NK_ADDR, NK_PTR, NK_MINUS, NK_NOT,
+    NK_MUL, NK_DIV, NK_ADDR, NK_INDIR, NK_MINUS, NK_NOT,
     NK_ID, NK_INT_LIT,
     NK_CALL, NK_ARG,
 } NODE_KIND;
 
 struct node {
     NODE_KIND kind;
+    TYPE *type;
     union {
         struct {
             NODE *n1;
@@ -137,14 +155,18 @@ struct node {
     } u;
 };
 
-NODE *new_node(NODE_KIND kind);
-NODE *new_node1(NODE_KIND kind, NODE *n1);
-NODE *new_node2(NODE_KIND kind, NODE *n1, NODE *n2);
-NODE *new_node3(NODE_KIND kind, NODE *n1, NODE *n2, NODE *n3);
-NODE *new_node4(NODE_KIND kind, NODE *n1, NODE *n2, NODE *n3, NODE *n4);
+NODE *new_node(NODE_KIND kind, TYPE *typ);
+NODE *new_node1(NODE_KIND kind, TYPE *typ, NODE *n1);
+NODE *new_node2(NODE_KIND kind, TYPE *typ, NODE *n1, NODE *n2);
+NODE *new_node3(NODE_KIND kind, TYPE *typ, NODE *n1, NODE *n2, NODE *n3);
+NODE *new_node4(NODE_KIND kind, TYPE *typ,
+                    NODE *n1, NODE *n2, NODE *n3, NODE *n4);
 NODE *link_node(NODE_KIND kind, NODE *node, NODE *top);
 NODE *new_node_sym(NODE_KIND kind, SYMBOL *sym);
-NODE *new_node_lit(NODE_KIND kind, int num);
+NODE *new_node_int(NODE_KIND kind, int num);
+const char *node_kind_to_str(NODE_KIND kind);
+bool node_can_take_addr(const NODE *np);
+
 void print_node(NODE *np);
 
 typedef struct {

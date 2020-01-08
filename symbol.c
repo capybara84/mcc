@@ -2,6 +2,8 @@
 #include <string.h>
 #include "mcc.h"
 
+TYPE g_type_int = { T_INT, SC_DEFAULT, NULL };
+
 static SYMTAB *global_table = NULL;
 static SYMTAB *current_symtab = NULL;
 
@@ -17,9 +19,7 @@ TYPE *new_type(TYPE_KIND kind, STORAGE_CLASS sclass, TYPE *ref_typ)
 
 TYPE *dup_type(TYPE *tp)
 {
-    TYPE *np = new_type(T_UNKNOWN, SC_DEFAULT, NULL);
-    memcpy(np, tp, sizeof (TYPE));
-    return np;
+    return new_type(tp->kind, tp->sclass, tp->type);
 }
 
 bool equal_type(const TYPE *tl, const TYPE *tr)
@@ -36,6 +36,123 @@ bool equal_type(const TYPE *tl, const TYPE *tr)
         return false;
     return true;
 }
+
+bool type_is_void(const TYPE *typ)
+{
+    return (typ != NULL && typ->kind == T_VOID);
+}
+
+bool type_is_function(const TYPE *typ)
+{
+    return (typ != NULL && typ->kind == T_FUNC);
+}
+
+bool type_is_int(const TYPE *typ)
+{
+    return (typ != NULL && typ->kind == T_INT);
+}
+
+bool type_is_pointer(const TYPE *typ)
+{
+    return (typ != NULL && typ->kind == T_POINTER);
+}
+
+TYPE *type_indir(TYPE *typ)
+{
+    assert(type_is_pointer(typ));
+    return typ->type;
+}
+
+TYPE *get_func_return_type(TYPE *typ)
+{
+    assert(type_is_function(typ));
+    return typ->type;
+}
+
+bool type_can_mul_div(const TYPE *lhs, const TYPE *rhs)
+{
+    return type_is_int(lhs) && type_is_int(rhs);
+}
+
+bool type_can_add(const TYPE *lhs, const TYPE *rhs)
+{
+    if (type_is_int(lhs) && type_is_int(rhs))
+        return true;
+    if ((type_is_pointer(lhs) || type_is_function(lhs)) && type_is_int(rhs))
+        return true;
+    else if ((type_is_pointer(rhs) || type_is_function(rhs))
+                && type_is_int(lhs))
+        return true;
+    return false;
+}
+
+bool type_can_sub(const TYPE *lhs, const TYPE *rhs)
+{
+    if (type_is_int(lhs) && type_is_int(rhs))
+        return true;
+    if ((type_is_pointer(lhs) || type_is_function(lhs)) && type_is_int(rhs))
+        return true;
+    return false;
+}
+
+bool type_warn_rel(const TYPE *lhs, const TYPE *rhs)
+{
+    if (type_is_pointer(lhs) && type_is_pointer(rhs)
+                && !equal_type(lhs, rhs))
+        return true;
+    if ((type_is_pointer(lhs) && type_is_function(rhs))
+            || (type_is_function(lhs) && type_is_pointer(rhs)))
+        return true;
+    return false;
+}
+
+bool type_can_rel(const TYPE *lhs, const TYPE *rhs)
+{
+    if (type_is_void(lhs) || type_is_void(rhs))
+        return false;
+    if (equal_type(lhs, rhs))
+        return true;
+    if ((type_is_pointer(lhs) && type_is_int(rhs))
+            || (type_is_int(lhs) && type_is_pointer(rhs)))
+        return true;
+    return false;
+}
+
+bool type_can_logical(const TYPE *lhs, const TYPE *rhs)
+{
+    return !type_is_void(lhs) && !type_is_void(rhs);
+}
+
+bool type_can_assign(const TYPE *lhs, const TYPE *rhs)
+{
+    if (type_is_void(lhs) || type_is_void(rhs))
+        return false;
+    if (equal_type(lhs, rhs))
+        return true;
+    if (type_is_pointer(lhs) && type_is_pointer(rhs))
+        return type_can_assign(lhs->type, rhs->type);
+    if (type_is_pointer(lhs) && type_is_function(rhs)
+            && equal_type(lhs->type, rhs)) {
+        return true;
+    }
+    return false;
+}
+
+bool type_warn_assign(const TYPE *lhs, const TYPE *rhs)
+{
+    if ((type_is_pointer(lhs) && type_is_int(rhs))
+            || (type_is_pointer(lhs) && type_is_function(rhs))
+            || (type_is_int(lhs) && type_is_pointer(rhs))
+            || (type_is_int(lhs) && type_is_function(rhs))) {
+        return true;
+    }
+    if (type_is_pointer(lhs) && type_is_pointer(rhs)
+            && !equal_type(lhs, rhs)) {
+        return true;
+    }
+    return false;
+}
+
 
 static void print_storage_class(STORAGE_CLASS sc)
 {
@@ -104,7 +221,18 @@ SYMBOL *new_symbol(SYMBOL_KIND kind, char *id, TYPE *type)
     p->has_body = false;
     p->body_node = NULL;
     p->tab = NULL;
+
     return p;
+}
+
+SYMBOL *lookup_symbol_local(const char *id)
+{
+    SYMBOL *sym;
+    for (sym = current_symtab->sym; sym != NULL; sym = sym->next) {
+        if (sym->id == id)
+            return sym;
+    }
+    return NULL;
 }
 
 SYMBOL *lookup_symbol(const char *id)
@@ -130,13 +258,13 @@ SYMTAB *new_symtab(SYMTAB *up)
     return tab;
 }
 
-void enter_function(SYMBOL *sym)
+SYMTAB *enter_scope(SYMTAB *up)
 {
-    sym->tab = new_symtab(current_symtab);
-    current_symtab = sym->tab;
+    SYMTAB *tab = new_symtab(up ? up : current_symtab);
+    return current_symtab = tab;
 }
 
-void leave_function(void)
+void leave_scope(void)
 {
     assert(current_symtab->up);
     current_symtab = current_symtab->up;

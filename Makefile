@@ -18,9 +18,13 @@ test_parser : test_parser.o gen.o node.o parser.o scanner.o symbol.o misc.o
 parser_test : test_parser
 	-./test_parser test_parser1.c > test_parser1.output
 	-diff test_parser1.result test_parser1.output
+	-./test_parser test_parser2.c > test_parser2.output
+	-diff test_parser2.result test_parser2.output
+	-./test_parser test_parser3.c > test_parser3.output
+	-diff test_parser3.result test_parser3.output
 
 clean:
-	rm -f mcc test_scanner test_parser *.o
+	rm -f mcc *.o test_scanner test_parser *.output
 
 main.o : mcc.h
 gen.o : mcc.h

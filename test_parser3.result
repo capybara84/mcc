@@ -1,0 +1,21 @@
+test_parser3.c(10):warning:incompatible pointer types
+test_parser3.c(11):warning:incompatible pointer types
+test_parser3.c(16):warning:incompatible pointer types
+test_parser3.c(18):warning:incompatible pointer types
+test_parser3.c(19):warning:incompatible pointer types
+SYM foo (FUNC):FUNC <void > PARAM () 
+local tab
+SYM q (VAR):POINTER to int 
+SYM p (VAR):POINTER to int 
+SYM pf (VAR):POINTER to FUNC <void > PARAM () 
+{
+(p = q);
+(p = bar);
+(q = (&bar));
+(pf = bar);
+(pf = (&bar));
+(pf < bar);
+(p = 0);
+(p = 1);
+}
+SYM bar (FUNC):FUNC <void > PARAM () 

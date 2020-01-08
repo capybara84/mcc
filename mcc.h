@@ -45,9 +45,10 @@ extern TYPE g_type_int;
 TYPE *new_type(TYPE_KIND kind, STORAGE_CLASS sclass, TYPE *typ);
 TYPE *dup_type(TYPE *typ);
 bool equal_type(const TYPE *tl, const TYPE *tr);
+bool type_is_void(const TYPE *typ);
 bool type_is_function(const TYPE *typ);
 bool type_is_int(const TYPE *typ);
-bool type_can_indirection(const TYPE *typ);
+bool type_is_pointer(const TYPE *typ);
 TYPE *type_indir(TYPE *typ);
 TYPE *get_func_return_type(TYPE *typ);
 
@@ -154,7 +155,9 @@ NODE *new_node4(NODE_KIND kind, TYPE *typ,
                     NODE *n1, NODE *n2, NODE *n3, NODE *n4);
 NODE *link_node(NODE_KIND kind, NODE *node, NODE *top);
 NODE *new_node_sym(NODE_KIND kind, SYMBOL *sym);
-NODE *new_node_lit(NODE_KIND kind, int num);
+NODE *new_node_int(NODE_KIND kind, int num);
+const char *node_kind_to_str(NODE_KIND kind);
+bool node_can_take_addr(const NODE *np);
 
 void print_node(NODE *np);
 

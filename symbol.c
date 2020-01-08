@@ -39,6 +39,11 @@ bool equal_type(const TYPE *tl, const TYPE *tr)
     return true;
 }
 
+bool type_is_void(const TYPE *typ)
+{
+    return (typ != NULL && typ->kind == T_VOID);
+}
+
 bool type_is_function(const TYPE *typ)
 {
     return (typ != NULL && typ->kind == T_FUNC);
@@ -49,14 +54,14 @@ bool type_is_int(const TYPE *typ)
     return (typ != NULL && typ->kind == T_INT);
 }
 
-bool type_can_indirection(const TYPE *typ)
+bool type_is_pointer(const TYPE *typ)
 {
     return (typ != NULL && typ->kind == T_POINTER);
 }
 
 TYPE *type_indir(TYPE *typ)
 {
-    assert(type_can_indirection(typ));
+    assert(type_is_pointer(typ));
     return typ->type;
 }
 

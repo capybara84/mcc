@@ -205,7 +205,7 @@ static NODE *parse_primary_expression(PARSER *pars)
         {
             int n = get_int_lit(pars);
             next(pars);
-            np = new_node_lit(NK_INT_LIT, n);
+            np = new_node_int(NK_INT_LIT, n);
         }
         break;
     case TK_LPAR:
@@ -285,14 +285,12 @@ static NODE *parse_unary_expression(PARSER *pars)
     np = parse_postfix_expression(pars);
     switch (kind) {
     case NK_ADDR:
-    /* TODO
-        if (!can_take_addr(np))
+        if (!node_can_take_addr(np))
             parser_error(pars, "cannot take the address");
-    */
         np = new_node1(NK_ADDR, new_type(T_POINTER, SC_DEFAULT, np->type), np);
         break;
     case NK_INDIR:
-        if (!type_can_indirection(np->type))
+        if (!type_is_pointer(np->type))
             parser_error(pars, "cannot indirection");
         np = new_node1(NK_INDIR, type_indir(np->type), np);
         break;
@@ -314,6 +312,74 @@ static NODE *parse_unary_expression(PARSER *pars)
     return np;
 }
 
+static TYPE *type_check_bin(PARSER *pars, NODE_KIND kind, TYPE *lhs, TYPE *rhs)
+{
+    switch (kind) {
+    case NK_MUL:
+    case NK_DIV:
+        if (!type_is_int(lhs) || !type_is_int(rhs))
+            parser_error(pars, "'%s' type mismatch", node_kind_to_str(kind));
+        break;
+    case NK_ADD:
+        if (type_is_int(lhs) && type_is_int(rhs))
+            break;
+        if (type_is_pointer(lhs) || type_is_function(lhs)) {
+            if (type_is_int(rhs))
+                break;
+        } else if (type_is_pointer(rhs) || type_is_function(rhs)) {
+            if (type_is_int(lhs))
+                break;
+        }
+        parser_error(pars, "'+' type mismatch");
+        break;
+    case NK_SUB:
+        if (type_is_int(lhs) && type_is_int(rhs))
+            break;
+        if (type_is_pointer(lhs) || type_is_function(lhs)) {
+            if (type_is_int(rhs))
+                break;
+        }
+        parser_error(pars, "'-' type mismatch");
+        break;
+    case NK_LT:
+    case NK_GT:
+    case NK_LE:
+    case NK_GE:
+        if (type_is_int(lhs) && type_is_int(rhs))
+            break;
+        if (type_is_pointer(lhs) && type_is_pointer(rhs))
+            break;
+        if (type_is_function(lhs) && type_is_function(rhs))
+            break;
+        parser_error(pars, "'%s' type mismatch", node_kind_to_str(kind));
+        break;
+    case NK_EQ:
+    case NK_NEQ:
+        if (type_is_int(lhs) && type_is_int(rhs))
+            break;
+        if (type_is_pointer(lhs) && type_is_pointer(rhs))
+            break;
+        if (type_is_function(lhs) && type_is_function(rhs))
+            break;
+        if (type_is_pointer(lhs) && type_is_int(rhs))
+            break;
+        if (type_is_int(lhs) && type_is_pointer(rhs))
+            break;
+        parser_error(pars, "'%s' type mismatch", node_kind_to_str(kind));
+        break;
+    case NK_LAND:
+    case NK_LOR:
+        if (type_is_void(lhs) || type_is_void(rhs))
+            parser_error(pars, "type void");
+        break;
+    case NK_ASSIGN:
+        /*TODO check left value */
+        break;
+    default: assert(0);
+    }
+    return &g_type_int;
+}
+
 /*
 multiplicative_expression
 	= unary_expression
@@ -327,9 +393,12 @@ static NODE *parse_multiplicative_expression(PARSER *pars)
     np = parse_unary_expression(pars);
     while (pars->token == TK_STAR || pars->token == TK_SLASH) {
         NODE_KIND kind = token_to_node_kind(pars->token);
+        NODE *rhs;
+        TYPE *typ;
         next(pars);
-        /* TODO type check */
-        np = new_node2(kind, NULL, np, parse_unary_expression(pars));
+        rhs = parse_unary_expression(pars);
+        typ = type_check_bin(pars, kind, np->type, rhs->type);
+        np = new_node2(kind, typ, np, rhs);
     }
     LEAVE("parse_multiplicative_expression");
     return np;
@@ -348,9 +417,12 @@ static NODE *parse_additive_expression(PARSER *pars)
     np = parse_multiplicative_expression(pars);
     while (pars->token == TK_PLUS || pars->token == TK_MINUS) {
         NODE_KIND kind = token_to_node_kind(pars->token);
+        NODE *rhs;
+        TYPE *typ;
         next(pars);
-        /*TODO type check */
-        np = new_node2(kind, NULL, np, parse_multiplicative_expression(pars));
+        rhs = parse_multiplicative_expression(pars);
+        typ = type_check_bin(pars, kind, np->type, rhs->type);
+        np = new_node2(kind, typ, np, rhs);
     }
     LEAVE("parse_additive_expression");
     return np;
@@ -372,9 +444,12 @@ static NODE *parse_relational_expression(PARSER *pars)
     while (pars->token == TK_LT || pars->token == TK_GT ||
             pars->token == TK_LE || pars->token == TK_GE) {
         NODE_KIND kind = token_to_node_kind(pars->token);
+        NODE *rhs;
+        TYPE *typ;
         next(pars);
-        /*TODO type check */
-        np = new_node2(kind, NULL, np, parse_additive_expression(pars));
+        rhs = parse_additive_expression(pars);
+        typ = type_check_bin(pars, kind, np->type, rhs->type);
+        np = new_node2(kind, typ, np, rhs);
     }
     LEAVE("parse_relational_expression");
     return np;
@@ -393,9 +468,12 @@ static NODE *parse_equality_expression(PARSER *pars)
     np = parse_relational_expression(pars);
     while (pars->token == TK_EQ || pars->token == TK_NEQ) {
         NODE_KIND kind = token_to_node_kind(pars->token);
+        NODE *rhs;
+        TYPE *typ;
         next(pars);
-        /* TODO type check */
-        np = new_node2(kind, NULL, np, parse_relational_expression(pars));
+        rhs = parse_relational_expression(pars);
+        typ = type_check_bin(pars, kind, np->type, rhs->type);
+        np = new_node2(kind, typ, np, rhs);
     }
     LEAVE("parse_equality_expression");
     return np;
@@ -412,9 +490,12 @@ static NODE *parse_logical_and_expression(PARSER *pars)
     ENTER("parse_logical_and_expression");
     np = parse_equality_expression(pars);
     while (pars->token == TK_LAND) {
+        NODE *rhs;
+        TYPE *typ;
         next(pars);
-        /*TODO type check */
-        np = new_node2(NK_LAND, NULL, np, parse_equality_expression(pars));
+        rhs = parse_equality_expression(pars);
+        typ = type_check_bin(pars, NK_LAND, np->type, rhs->type);
+        np = new_node2(NK_LAND, typ, np, rhs);
     }
     LEAVE("parse_logical_and_expression");
     return np;
@@ -431,9 +512,12 @@ static NODE *parse_logical_or_expression(PARSER *pars)
     ENTER("parse_logical_or_expression");
     np = parse_logical_and_expression(pars);
     while (pars->token == TK_LOR) {
+        NODE *rhs;
+        TYPE *typ;
         next(pars);
-        /*TODO type check */
-        np = new_node2(NK_LOR, NULL, np, parse_logical_and_expression(pars));
+        rhs = parse_logical_and_expression(pars);
+        typ = type_check_bin(pars, NK_LOR, np->type, rhs->type);
+        np = new_node2(NK_LOR, typ, np, rhs);
     }
     LEAVE("parse_logical_or_expression");
     return np;
@@ -451,13 +535,12 @@ static NODE *parse_assignment_expression(PARSER *pars)
     ENTER("parse_assignment_expression");
     np = parse_logical_or_expression(pars);
     if (pars->token == TK_ASSIGN) {
-        NODE *p;
-        /* TODO unary_expression (left value) */
-        /* TODO check np is left value */
-        /* TODO type check */
+        NODE *rhs;
+        TYPE *typ;
         next(pars);
-        p = parse_assignment_expression(pars);
-        np = new_node2(NK_ASSIGN, p->type, np, p);
+        rhs = parse_assignment_expression(pars);
+        typ = type_check_bin(pars, NK_ASSIGN, np->type, rhs->type);
+        np = new_node2(NK_ASSIGN, typ, np, rhs);
     }
     LEAVE("parse_assignment_expression");
     return np;
@@ -498,7 +581,7 @@ static NODE *parse_compound_statement(PARSER *pars, SYMTAB **pptab)
     next(pars); /* skip '{' */
     while (is_declaration(pars))
         parse_declaration(pars);
-    /*TODO calc local variable size */
+    /* TODO calc local table size */
     while (is_statement(pars)) {
         NODE *p = parse_statement(pars);
         np = link_node(NK_COMPOUND, p, np);
@@ -636,7 +719,7 @@ static NODE *parse_statement(PARSER *pars)
             else
                 e = NULL;
             expect(pars, TK_SEMI);
-            np = new_node1(NK_EXPR, e ? e->type : NULL, e);
+            np = new_node1(NK_EXPR, NULL, e);
         }
         break;
     }

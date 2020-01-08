@@ -67,7 +67,7 @@ NODE *new_node_sym(NODE_KIND kind, SYMBOL *sym)
     return np;
 }
 
-NODE *new_node_lit(NODE_KIND kind, int num)
+NODE *new_node_int(NODE_KIND kind, int num)
 {
     NODE *np;
     np = new_node(kind, &g_type_int);
@@ -75,7 +75,12 @@ NODE *new_node_lit(NODE_KIND kind, int num)
     return np;
 }
 
-static const char *node_kind_to_str(NODE_KIND kind)
+bool node_can_take_addr(const NODE *np)
+{
+    return (np != NULL && np->kind == NK_ID);
+}
+
+const char *node_kind_to_str(NODE_KIND kind)
 {
     switch (kind) {
     case NK_ASSIGN: return "=";
@@ -151,10 +156,20 @@ void print_node(NODE *np)
         if (np->u.link.n1)
             print_node(np->u.link.n1);
         printf(";\n");
+        if (is_verbose_level(1)) {
+            printf(" : ");
+            print_type(np->type);
+            printf("\n");
+        }
         break;
     case NK_EXPR:
         print_node(np->u.link.n1);
         printf(";\n");
+        if (is_verbose_level(1)) {
+            printf(" : ");
+            print_type(np->type);
+            printf("\n");
+        }
         break;
     case NK_ASSIGN:
     case NK_LOR:
@@ -174,6 +189,11 @@ void print_node(NODE *np)
         printf(" %s ", node_kind_to_str(np->kind));
         print_node(np->u.link.n2);
         printf(")");
+        if (is_verbose_level(1)) {
+            printf(" : ");
+            print_type(np->type);
+            printf("\n");
+        }
         break;
     case NK_ADDR:
     case NK_INDIR:
@@ -182,19 +202,39 @@ void print_node(NODE *np)
         printf("(%s", node_kind_to_str(np->kind));
         print_node(np->u.link.n1);
         printf(")");
+        if (is_verbose_level(1)) {
+            printf(" : ");
+            print_type(np->type);
+            printf("\n");
+        }
         break;
     case NK_ID:
         assert(np->u.sym);
         printf("%s", np->u.sym->id);
+        if (is_verbose_level(1)) {
+            printf(" : ");
+            print_type(np->type);
+            printf("\n");
+        }
         break;
     case NK_INT_LIT:
         printf("%d", np->u.num);
+        if (is_verbose_level(1)) {
+            printf(" : ");
+            print_type(np->type);
+            printf("\n");
+        }
         break;
     case NK_CALL:
         print_node(np->u.link.n1);
         printf("(");
         print_node(np->u.link.n2);
         printf(")");
+        if (is_verbose_level(1)) {
+            printf(" : ");
+            print_type(np->type);
+            printf("\n");
+        }
         break;
     case NK_ARG:
         print_node(np->u.link.n1);

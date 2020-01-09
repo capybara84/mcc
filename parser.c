@@ -560,7 +560,7 @@ static NODE *parse_expression(PARSER *pars)
     return np;
 }
 
-static void parse_declaration(PARSER *pars);
+static void parse_declaration(PARSER *pars, int var_num);
 static NODE *parse_statement(PARSER *pars);
 
 /*
@@ -569,7 +569,7 @@ compound_statement
 declaration_list
     = declaration {declaration}
 */
-static NODE *parse_compound_statement(PARSER *pars)
+static NODE *parse_compound_statement(PARSER *pars, int var_num)
 {
     NODE *np = NULL;
 
@@ -577,7 +577,7 @@ static NODE *parse_compound_statement(PARSER *pars)
 
     next(pars); /* skip '{' */
     while (is_declaration(pars))
-        parse_declaration(pars);
+        parse_declaration(pars, var_num);
     /* TODO calc local table size */
     while (is_statement(pars)) {
         NODE *p = parse_statement(pars);
@@ -625,8 +625,8 @@ static NODE *parse_statement(PARSER *pars)
     switch (pars->token) {
     case TK_BEGIN:
         TRACE("parse_statement", "compound");
-        enter_scope(NULL);
-        np = parse_compound_statement(pars);
+        enter_scope();
+        np = parse_compound_statement(pars, get_func_var_num());
         leave_scope();
         break;
     case TK_IF:
@@ -959,7 +959,7 @@ declaration
 declarator_list
     = declarator {',' declarator}
 */
-static void parse_declaration(PARSER *pars)
+static void parse_declaration(PARSER *pars, int var_num)
 {
     STORAGE_CLASS sc;
     TYPE *typ;
@@ -1004,8 +1004,10 @@ static void parse_declaration(PARSER *pars)
                 parser_error(pars, "'%s' duplicated", id);
             }
         }
-        if (!already)
-            new_symbol(symkind, sc, id, ntyp);
+        if (!already) {
+            int num = var_num == 0 ? 0 : var_num++;
+            new_symbol(symkind, sc, id, ntyp, num);
+        }
 
         if (pars->token != TK_COMMA)
             break;
@@ -1055,32 +1057,34 @@ static bool parse_external_delaration(PARSER *pars)
 
     if (pars->token == TK_SEMI) {
         if (sym == NULL)
-            sym = new_symbol(symkind, sc, id, typ);
+            sym = new_symbol(symkind, sc, id, typ, 0);
         next(pars);
     } else if (pars->token == TK_BEGIN) {
         NODE *body;
         PARAM *p;
+        int var_num;
         if (symkind != SK_FUNC)
             parser_error(pars, "invalid function syntax");
         if (sym) {
             if (sym->has_body)
                 parser_error(pars, "'%s' redefinition", id);
         } else
-            sym = new_symbol(SK_FUNC, sc, id, typ);
-        sym->tab = enter_scope(NULL);
+            sym = new_symbol(SK_FUNC, sc, id, typ, 0);
+        sym->tab = enter_function(sym);
+        var_num = -1;
         for (p = param_list; p != NULL; p = p->next) {
-            new_symbol(SK_VAR, SC_DEFAULT, p->id, p->type);
+            new_symbol(SK_VAR, SC_DEFAULT, p->id, p->type, var_num--);
             if (is_verbose_level(1)) {
                 printf("param id:%s type:", p->id);
                 print_type(p->type);
                 printf("\n");
             }
         }
-        body = parse_compound_statement(pars);
+        body = parse_compound_statement(pars, 1);
         /*TODO calc local table size */
         sym->has_body = true;
         sym->body_node = body;
-        leave_scope();
+        leave_function();
     } else {
         parser_error(pars, "syntax error");
     }

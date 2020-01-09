@@ -7,6 +7,7 @@ TYPE g_type_null = { T_NULL, NULL, NULL };
 
 static SYMTAB *global_table = NULL;
 static SYMTAB *current_symtab = NULL;
+static SYMBOL *current_function = NULL;
 
 
 TYPE *new_type(TYPE_KIND kind, TYPE *ref_typ, PARAM *param)
@@ -230,7 +231,8 @@ void print_type(const TYPE *typ)
 
 
 SYMBOL *
-new_symbol(SYMBOL_KIND kind, STORAGE_CLASS sc, const char *id, TYPE *type)
+new_symbol(SYMBOL_KIND kind, STORAGE_CLASS sc, const char *id,
+            TYPE *type, int var_num)
 {
     SYMBOL *p;
 
@@ -245,6 +247,11 @@ new_symbol(SYMBOL_KIND kind, STORAGE_CLASS sc, const char *id, TYPE *type)
     p->has_body = false;
     p->body_node = NULL;
     p->tab = NULL;
+    p->var_num = var_num;
+    if (var_num > 0) {
+        assert(current_function);
+        current_function->var_num = var_num;
+    }
 
     return p;
 }
@@ -282,9 +289,9 @@ SYMTAB *new_symtab(SYMTAB *up)
     return tab;
 }
 
-SYMTAB *enter_scope(SYMTAB *up)
+SYMTAB *enter_scope(void)
 {
-    SYMTAB *tab = new_symtab(up ? up : current_symtab);
+    SYMTAB *tab = new_symtab(current_symtab);
     return current_symtab = tab;
 }
 
@@ -292,6 +299,24 @@ void leave_scope(void)
 {
     assert(current_symtab->up);
     current_symtab = current_symtab->up;
+}
+
+SYMTAB *enter_function(SYMBOL *sym)
+{
+    current_function = sym;
+    return enter_scope();
+}
+
+void leave_function(void)
+{
+    leave_scope();
+    current_function = NULL;
+}
+
+int get_func_var_num(void)
+{
+    assert(current_function);
+    return current_function->var_num;
 }
 
 bool init_symtab(void)
@@ -336,8 +361,8 @@ void print_symtab_1(const SYMTAB *tab)
 
 void print_symbol(const SYMBOL *sym)
 {
-    printf("SYM %s (%s) %s:", sym->id, get_kind_string(sym->kind),
-        get_storage_class_string(sym->sclass));
+    printf("SYM %s %s(%d) %s:", sym->id, get_kind_string(sym->kind),
+        sym->var_num, get_storage_class_string(sym->sclass));
     print_type(sym->type);
     printf("\n");
     if (sym->kind == SK_FUNC && sym->has_body) {

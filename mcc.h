@@ -90,6 +90,7 @@ struct symbol {
     bool has_body;
     NODE *body_node;
     SYMTAB *tab;
+    int var_num;
 };
 
 struct symtab {
@@ -98,12 +99,15 @@ struct symtab {
 };
 
 SYMBOL *new_symbol(SYMBOL_KIND kind, STORAGE_CLASS sc,
-                    const char *id, TYPE *type);
+                    const char *id, TYPE *type, int var_num);
 SYMBOL *lookup_symbol_local(const char *id);
 SYMBOL *lookup_symbol(const char *id);
 SYMTAB *new_symtab(SYMTAB *up);
-SYMTAB *enter_scope(SYMTAB *up);
+SYMTAB *enter_scope(void);
 void leave_scope(void);
+SYMTAB *enter_function(SYMBOL *sym);
+void leave_function(void);
+int get_func_var_num(void);
 bool init_symtab(void);
 void term_symtab(void);
 

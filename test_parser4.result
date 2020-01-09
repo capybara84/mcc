@@ -1,9 +1,19 @@
-SYM sub (FUNC) DEFAULT:FUNC <int> (int, int)
-SYM add (FUNC) DEFAULT:FUNC <int> (int, int)
+SYM test FUNC(3) DEFAULT:FUNC <int> (int, int, int)
 local tab
-SYM result (VAR) DEFAULT:int
-SYM y (VAR) DEFAULT:int
-SYM x (VAR) DEFAULT:int
+SYM z VAR(3) DEFAULT:int
+SYM y VAR(2) DEFAULT:int
+SYM x VAR(1) DEFAULT:int
+SYM c VAR(-3) DEFAULT:int
+SYM b VAR(-2) DEFAULT:int
+SYM a VAR(-1) DEFAULT:int
+{
+}
+SYM sub FUNC(0) DEFAULT:FUNC <int> (int, int)
+SYM add FUNC(1) DEFAULT:FUNC <int> (int, int)
+local tab
+SYM result VAR(1) DEFAULT:int
+SYM y VAR(-2) DEFAULT:int
+SYM x VAR(-1) DEFAULT:int
 {
 (result = (x + y));
 return result;

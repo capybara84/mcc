@@ -7,3 +7,8 @@ int add(int x, int y)
     result = x + y;
     return result;
 }
+
+int test(int a, int b, int c)
+{
+    int x, y, z;
+}

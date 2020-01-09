@@ -627,7 +627,8 @@ static NODE *parse_statement(PARSER *pars)
         TRACE("parse_statement", "compound");
         tab = enter_scope();
         np = parse_compound_statement(pars, get_func_var_num() + 1);
-        np->symtab = tab;
+        if (np)
+            np->symtab = tab;
         leave_scope();
         break;
     case TK_IF:

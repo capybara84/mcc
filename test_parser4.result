@@ -1,2 +1,10 @@
 SYM sub (FUNC) DEFAULT:FUNC <int> (int, int)
 SYM add (FUNC) DEFAULT:FUNC <int> (int, int)
+local tab
+SYM result (VAR) DEFAULT:int
+SYM y (VAR) DEFAULT:int
+SYM x (VAR) DEFAULT:int
+{
+(result = (x + y));
+return result;
+}

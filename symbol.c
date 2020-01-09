@@ -9,7 +9,7 @@ static SYMTAB *global_table = NULL;
 static SYMTAB *current_symtab = NULL;
 
 
-TYPE *new_type(TYPE_KIND kind, TYPE *ref_typ, TYPE *param)
+TYPE *new_type(TYPE_KIND kind, TYPE *ref_typ, PARAM *param)
 {
     TYPE *typ = (TYPE*) alloc(sizeof (TYPE));
     typ->kind = kind;
@@ -37,8 +37,18 @@ bool equal_type(const TYPE *tl, const TYPE *tr)
         return false;
     if (!equal_type(tl->type, tr->type))
         return false;
-    if (!equal_type(tl->param, tr->param))
-        return false;
+    {
+        PARAM *pl = tl->param;
+        PARAM *pr = tr->param;
+        while (pl != NULL && pr != NULL) {
+            if (!equal_type(pl->type, pr->type))
+                return false;
+            pl = pl->next;
+            pr = pr->next;
+        }
+        if (pl != NULL || pr != NULL)
+            return false;
+    }
     return true;
 }
 
@@ -165,22 +175,25 @@ bool type_warn_assign(const TYPE *lhs, const TYPE *rhs)
     return false;
 }
 
-
-TYPE *link_param(TYPE *top, TYPE *param)
+PARAM *link_param(PARAM *top, TYPE *typ, char *id)
 {
-    TYPE *tp, *p;
-
-    tp = new_type(T_PARAM, param, NULL);
+    PARAM *param = (PARAM*) alloc(sizeof (PARAM));
+    PARAM *p;
+    param->next = NULL;
+    param->id = id;
+    param->type = typ;
     if (top == NULL)
-        return tp;
-    for (p = top; p->param != NULL; p = p->param)
+        return param;
+    for (p = top; p->next != NULL; p = p->next)
         ;
-    p->param =tp;
+    p->next = param;
     return top;
 }
 
+
 void print_type(const TYPE *typ)
 {
+    PARAM *p;
     if (typ == NULL) {
     } else {
         switch (typ->kind) {
@@ -204,14 +217,12 @@ void print_type(const TYPE *typ)
             printf("FUNC <");
             print_type(typ->type);
             printf("> (");
-            print_type(typ->param);
+            for (p = typ->param; p != NULL; p = p->next) {
+                print_type(p->type);
+                if (p->next != NULL)
+                    printf(", ");
+            }
             printf(")");
-            break;
-        case T_PARAM:
-            print_type(typ->type);
-            if (typ->param != NULL)
-                printf(", ");
-            print_type(typ->param);
             break;
         }
     }

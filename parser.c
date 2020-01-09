@@ -569,16 +569,12 @@ compound_statement
 declaration_list
     = declaration {declaration}
 */
-static NODE *parse_compound_statement(PARSER *pars, SYMTAB **pptab)
+static NODE *parse_compound_statement(PARSER *pars)
 {
     NODE *np = NULL;
 
     ENTER("parse_compound_statement");
 
-    if (pptab)
-        *pptab = enter_scope(*pptab);
-    else
-        enter_scope(NULL);
     next(pars); /* skip '{' */
     while (is_declaration(pars))
         parse_declaration(pars);
@@ -588,7 +584,6 @@ static NODE *parse_compound_statement(PARSER *pars, SYMTAB **pptab)
         np = link_node(NK_COMPOUND, p, np);
     }
     expect(pars, TK_END);
-    leave_scope();
     LEAVE("parse_compound_statement");
     return np;
 }
@@ -630,7 +625,9 @@ static NODE *parse_statement(PARSER *pars)
     switch (pars->token) {
     case TK_BEGIN:
         TRACE("parse_statement", "compound");
-        np = parse_compound_statement(pars, NULL);
+        enter_scope(NULL);
+        np = parse_compound_statement(pars);
+        leave_scope();
         break;
     case TK_IF:
         TRACE("parse_statement", "if");
@@ -735,7 +732,7 @@ param_declarator
 	= {'*'} [IDENTIFIER | '(' param_declarator ')']
         ['(' [parameter_list] ')']
 */
-static void parse_param_declarator(PARSER *pars, TYPE **pptyp)
+static void parse_param_declarator(PARSER *pars, TYPE **pptyp, char **id)
 {
     TYPE *typ = NULL;
 
@@ -749,11 +746,12 @@ static void parse_param_declarator(PARSER *pars, TYPE **pptyp)
         next(pars);
     }
     if (pars->token == TK_ID) {
+        *id = get_id(pars);
         next(pars);
     } else if (pars->token == TK_LPAR) {
         typ = new_type(T_UNKNOWN, NULL, NULL);
         next(pars);
-        parse_param_declarator(pars, &typ);
+        parse_param_declarator(pars, &typ, id);
         expect(pars, TK_RPAR);
     }
     if (pars->token == TK_LPAR) {
@@ -796,7 +794,7 @@ parse_declaration_specifiers(PARSER *pars, STORAGE_CLASS *sc, TYPE *typ);
 parameter_declaration
 	= declaration_specifiers [param_declarator]
 */
-static TYPE *parse_parameter_declaration(PARSER *pars)
+static TYPE *parse_parameter_declaration(PARSER *pars, char **id)
 {
     STORAGE_CLASS sc;
     TYPE *typ;
@@ -809,7 +807,7 @@ static TYPE *parse_parameter_declaration(PARSER *pars)
     /* TODO check sc */
 
     if (pars->token != TK_COMMA && pars->token != TK_RPAR)
-        parse_param_declarator(pars, &typ);
+        parse_param_declarator(pars, &typ, id);
 
     LEAVE("parse_parameter_declaration");
     return typ;
@@ -822,11 +820,13 @@ parameter_list
 static TYPE *parse_parameter_list(PARSER *pars)
 {
     TYPE *param;
+    char *id = NULL;
+
     ENTER("parse_parameter_list");
-    param = link_param(NULL, parse_parameter_declaration(pars));
+    param = link_param(NULL, parse_parameter_declaration(pars, &id));
     while (pars->token == TK_COMMA) {
         next(pars);
-        param = link_param(param, parse_parameter_declaration(pars));
+        param = link_param(param, parse_parameter_declaration(pars, &id));
     }
     LEAVE("parse_parameter_list");
     return param;
@@ -1062,10 +1062,12 @@ static bool parse_external_delaration(PARSER *pars)
             parser_error(pars, "'%s' redefinition", id);
         else
             sym = new_symbol(SK_FUNC, sc, id, typ);
-        body = parse_compound_statement(pars, &sym->tab);
+        sym->tab = enter_scope(NULL);
+        body = parse_compound_statement(pars);
         /*TODO calc local table size */
         sym->has_body = true;
         sym->body_node = body;
+        leave_scope();
     } else {
         parser_error(pars, "syntax error");
     }

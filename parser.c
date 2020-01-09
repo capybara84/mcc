@@ -560,7 +560,7 @@ static NODE *parse_expression(PARSER *pars)
     return np;
 }
 
-static void parse_declaration(PARSER *pars, int var_num);
+static void parse_declaration(PARSER *pars, int *var_num);
 static NODE *parse_statement(PARSER *pars);
 
 /*
@@ -577,8 +577,7 @@ static NODE *parse_compound_statement(PARSER *pars, int var_num)
 
     next(pars); /* skip '{' */
     while (is_declaration(pars))
-        parse_declaration(pars, var_num);
-    /* TODO calc local table size */
+        parse_declaration(pars, &var_num);
     while (is_statement(pars)) {
         NODE *p = parse_statement(pars);
         np = link_node(NK_COMPOUND, p, np);
@@ -626,7 +625,7 @@ static NODE *parse_statement(PARSER *pars)
     case TK_BEGIN:
         TRACE("parse_statement", "compound");
         enter_scope();
-        np = parse_compound_statement(pars, get_func_var_num());
+        np = parse_compound_statement(pars, get_func_var_num() + 1);
         leave_scope();
         break;
     case TK_IF:
@@ -959,7 +958,7 @@ declaration
 declarator_list
     = declarator {',' declarator}
 */
-static void parse_declaration(PARSER *pars, int var_num)
+static void parse_declaration(PARSER *pars, int *var_num)
 {
     STORAGE_CLASS sc;
     TYPE *typ;
@@ -982,7 +981,8 @@ static void parse_declaration(PARSER *pars, int var_num)
 
 
         if (is_verbose_level(1)) {
-            printf("local id:%s %s type:", id, get_storage_class_string(sc));
+            printf("local id:%s %d %s type:",
+                    id, *var_num, get_storage_class_string(sc));
             print_type(ntyp);
             printf("\n");
         }
@@ -1005,7 +1005,7 @@ static void parse_declaration(PARSER *pars, int var_num)
             }
         }
         if (!already) {
-            int num = var_num == 0 ? 0 : var_num++;
+            int num = *var_num == 0 ? 0 : (*var_num)++;
             new_symbol(symkind, sc, id, ntyp, num);
         }
 

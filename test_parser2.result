@@ -1,4 +1,4 @@
-SYM foo FUNC(1) DEFAULT:FUNC <void> ()
+SYM foo FUNC(2) DEFAULT:FUNC <void> ()
 local tab
 SYM a VAR(1) DEFAULT:int
 {

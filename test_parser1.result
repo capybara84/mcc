@@ -3,16 +3,19 @@ local tab
 SYM b VAR(2) DEFAULT:int
 SYM a VAR(1) DEFAULT:int
 {
+{
 (a = 123);
 (b = 0);
 for ((a = 0); (a < 10); (a = (a + 1)))
 (b = (b + a));
 return b;
 }
+}
 SYM fun FUNC(2) DEFAULT:FUNC <int> ()
 local tab
 SYM b VAR(2) DEFAULT:int
 SYM a VAR(1) DEFAULT:int
+{
 {
 (a = 123);
 if ((a != 0))
@@ -22,6 +25,7 @@ else
 (b = 2);
 while ((a == 1))
 (a = (a - 1));
+}
 }
 SYM spp VAR(0) STATIC:POINTER to POINTER to int
 SYM ppfn VAR(0) DEFAULT:POINTER to POINTER to FUNC <int> ()
@@ -34,6 +38,8 @@ SYM b VAR(0) STATIC:int
 SYM bar FUNC(0) DEFAULT:FUNC <int> ()
 local tab
 {
+{
+}
 }
 SYM foo FUNC(0) DEFAULT:FUNC <void> ()
 SYM a VAR(0) DEFAULT:int

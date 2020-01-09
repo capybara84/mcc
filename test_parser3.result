@@ -8,6 +8,7 @@ SYM q VAR(3) DEFAULT:POINTER to int
 SYM p VAR(2) DEFAULT:POINTER to int
 SYM pf VAR(1) DEFAULT:POINTER to FUNC <void> ()
 {
+{
 (p = q);
 (p = bar);
 (q = (&bar));
@@ -16,5 +17,6 @@ SYM pf VAR(1) DEFAULT:POINTER to FUNC <void> ()
 (pf < bar);
 (p = 0);
 (p = 1);
+}
 }
 SYM bar FUNC(0) DEFAULT:FUNC <void> ()

@@ -114,9 +114,18 @@ void print_node(NODE *np)
         return;
     }
     switch (np->kind) {
-    case NK_COMPOUND:
+    case NK_LINK:
         print_node(np->u.link.n1);
         print_node(np->u.link.n2);
+        break;
+    case NK_COMPOUND:
+        printf("{\n");
+        if (np->symtab) {
+            printf("local symtab\n");
+            print_symtab_1(np->symtab);
+        }
+        print_node(np->u.link.n1);
+        printf("}\n");
         break;
     case NK_IF:
         printf("if (");
@@ -236,7 +245,6 @@ void print_node(NODE *np)
             printf("\n");
         }
         break;
-    case NK_PARAM:
     case NK_ARG:
         print_node(np->u.link.n1);
         if (np->u.link.n2) {

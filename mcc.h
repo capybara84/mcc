@@ -113,6 +113,7 @@ void term_symtab(void);
 
 const char *get_storage_class_string(STORAGE_CLASS sc);
 void print_symbol(const SYMBOL *sym);
+void print_symtab_1(const SYMTAB *tab);
 void print_symtab(const SYMTAB *tab);
 void print_global_symtab(void);
 
@@ -146,7 +147,7 @@ const char *scan_token_to_string(SCANNER *scan, TOKEN tk);
 
 
 typedef enum {
-    NK_PARAM,
+    NK_LINK,
     NK_COMPOUND, NK_IF, NK_WHILE, NK_FOR, NK_CONTINUE, NK_BREAK,
     NK_RETURN, NK_EXPR,
     NK_ASSIGN, NK_LOR, NK_LAND,

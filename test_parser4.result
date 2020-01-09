@@ -7,6 +7,8 @@ SYM c VAR(-3) DEFAULT:int
 SYM b VAR(-2) DEFAULT:int
 SYM a VAR(-1) DEFAULT:int
 {
+{
+}
 }
 SYM sub FUNC(0) DEFAULT:FUNC <int> (int, int)
 SYM add FUNC(1) DEFAULT:FUNC <int> (int, int)
@@ -15,6 +17,8 @@ SYM result VAR(1) DEFAULT:int
 SYM y VAR(-2) DEFAULT:int
 SYM x VAR(-1) DEFAULT:int
 {
+{
 (result = (x + y));
 return result;
+}
 }

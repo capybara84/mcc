@@ -9,7 +9,6 @@ static SYMTAB *global_table = NULL;
 static SYMTAB *current_symtab = NULL;
 static SYMBOL *current_function = NULL;
 
-
 TYPE *new_type(TYPE_KIND kind, TYPE *ref_typ, PARAM *param)
 {
     TYPE *typ = (TYPE*) alloc(sizeof (TYPE));

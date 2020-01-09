@@ -159,6 +159,7 @@ typedef enum {
 struct node {
     NODE_KIND kind;
     TYPE *type;
+    SYMTAB *symtab; /*TODO move inside union */
     union {
         struct {
             NODE *n1;

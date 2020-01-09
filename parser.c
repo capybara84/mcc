@@ -619,13 +619,15 @@ jump_statement
 static NODE *parse_statement(PARSER *pars)
 {
     NODE *np = NULL;
+    SYMTAB *tab;
 
     ENTER("parse_statement");
     switch (pars->token) {
     case TK_BEGIN:
         TRACE("parse_statement", "compound");
-        enter_scope();
+        tab = enter_scope();
         np = parse_compound_statement(pars, get_func_var_num() + 1);
+        np->symtab = tab;
         leave_scope();
         break;
     case TK_IF:

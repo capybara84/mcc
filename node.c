@@ -105,7 +105,7 @@ const char *node_kind_to_str(NODE_KIND kind)
     return "";
 }
 
-void print_node(NODE *np)
+void print_node(const NODE *np)
 {
     if (np == NULL) {
 /*
@@ -254,4 +254,5 @@ void print_node(NODE *np)
         break;
     }
 }
+
 

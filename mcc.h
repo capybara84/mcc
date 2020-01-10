@@ -117,6 +117,8 @@ void print_symtab_1(const SYMTAB *tab);
 void print_symtab(const SYMTAB *tab);
 void print_global_symtab(void);
 
+bool compile_all(FILE *fp);
+
 typedef enum {
     TK_EOF, TK_ID, TK_INT_LIT,
     TK_STATIC, TK_EXTERN, TK_VOID, TK_INT,
@@ -184,8 +186,9 @@ NODE *new_node_sym(NODE_KIND kind, SYMBOL *sym);
 NODE *new_node_int(NODE_KIND kind, int num);
 const char *node_kind_to_str(NODE_KIND kind);
 bool node_can_take_addr(const NODE *np);
+void print_node(const NODE *np);
 
-void print_node(NODE *np);
+bool compile_node(FILE *fp, const NODE *np);
 
 typedef struct {
     SCANNER *scan;
@@ -196,7 +199,5 @@ PARSER *open_parser_text(const char *filename, const char *text);
 PARSER *open_parser(const char *filename);
 bool close_parser(PARSER *pars);
 bool parse(PARSER *pars);
-
-bool compile(NODE *np);
 
 #endif

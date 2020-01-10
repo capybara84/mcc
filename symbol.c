@@ -348,16 +348,6 @@ static const char *get_kind_string(SYMBOL_KIND kind)
     return NULL;
 }
 
-void print_symtab_1(const SYMTAB *tab)
-{
-    const SYMBOL *sym;
-    if (tab == NULL)
-        return;
-    for (sym = tab->sym; sym != NULL; sym = sym->next) {
-        print_symbol(sym);
-    }
-}
-
 void print_symbol(const SYMBOL *sym)
 {
     printf("SYM %s %s(%d) %s:", sym->id, get_kind_string(sym->kind),
@@ -373,6 +363,16 @@ void print_symbol(const SYMBOL *sym)
     }
 }
 
+void print_symtab_1(const SYMTAB *tab)
+{
+    const SYMBOL *sym;
+    if (tab == NULL)
+        return;
+    for (sym = tab->sym; sym != NULL; sym = sym->next) {
+        print_symbol(sym);
+    }
+}
+
 void print_symtab(const SYMTAB *tab)
 {
     for (; tab != NULL; tab = tab->up) {
@@ -385,3 +385,46 @@ void print_global_symtab(void)
     print_symtab(global_table);
 }
 
+bool compile_symbol(FILE *fp, const SYMBOL *sym)
+{
+    fprintf(fp, ";SYM %s %s(%d) %s\n", sym->id, get_kind_string(sym->kind),
+        sym->var_num, get_storage_class_string(sym->sclass));
+    if (sym->kind == SK_FUNC && sym->has_body) {
+        if (sym->sclass != SC_STATIC)
+            fprintf(fp, ".global %s\n", sym->id);
+        if (sym->sclass != SC_EXTERN)
+            fprintf(fp, "%s:\n", sym->id);
+        if (sym->has_body) {
+            if (!compile_node(fp, sym->body_node))
+                return false;
+        }
+        fprintf(fp, "; -- %s\n", sym->id);
+    }
+    else if (sym->kind == SK_VAR) {
+        fprintf(fp, "%s:\n    .zero 8\n", sym->id);
+    }
+    return true;
+}
+
+
+bool compile_symtab(FILE *fp, const SYMTAB *tab)
+{
+    const SYMBOL *sym;
+    if (tab == NULL)
+        return true;
+    for (sym = tab->sym; sym != NULL; sym = sym->next) {
+        if (sym->kind == SK_VAR && !compile_symbol(fp, sym))
+            return false;
+    }
+    for (sym = tab->sym; sym != NULL; sym = sym->next) {
+        if (sym->kind == SK_FUNC && !compile_symbol(fp, sym))
+            return false;
+    }
+    return true;
+}
+
+bool compile_all(FILE *fp)
+{
+    fprintf(fp, ".intel_syntax noprefix\n");
+    return compile_symtab(fp, global_table);
+}

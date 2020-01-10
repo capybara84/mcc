@@ -11,7 +11,7 @@ void gen_lval(FILE *fp, const NODE *np)
 */
     assert(np->u.sym);
     fprintf(fp, "    mov rax, rbp\n");
-    fprintf(fp, "    sub rax, %d\n", np->u.sym->var_num * 8);
+    fprintf(fp, "    sub rax, %d   ; %s\n", np->u.sym->var_num * 8, np->u.sym->id);
     fprintf(fp, "    push rax\n");
 }
 
@@ -27,55 +27,52 @@ bool compile_node(FILE *fp, const NODE *np)
         compile_node(fp, np->u.link.n2);
         break;
     case NK_COMPOUND:
-        fprintf(fp, "{\n");
         if (np->symtab) {
-            fprintf(fp, "local symtab\n");
+            fprintf(fp, "; local symtab\n");
         }
         compile_node(fp, np->u.link.n1);
-        fprintf(fp, "}\n");
         break;
     case NK_IF:
-        fprintf(fp, "if (");
+        fprintf(fp, ";if (\n");
         compile_node(fp, np->u.link.n1);
-        fprintf(fp, ")\n");
+        fprintf(fp, ";)\n");
         compile_node(fp, np->u.link.n2);
-        fprintf(fp, "\n");
         if (np->u.link.n3) {
-            fprintf(fp, "else\n");
+            fprintf(fp, ";else\n");
             compile_node(fp, np->u.link.n3);
         }
         break;
     case NK_WHILE:
-        fprintf(fp, "while (");
+        fprintf(fp, ";while (\n");
         compile_node(fp, np->u.link.n1);
-        fprintf(fp, ")\n");
+        fprintf(fp, ";)\n");
         compile_node(fp, np->u.link.n2);
         break;
     case NK_FOR:
-        fprintf(fp, "for (");
+        fprintf(fp, ";for (\n");
         compile_node(fp, np->u.link.n1);
-        fprintf(fp, "; ");
+        fprintf(fp, ";\n");
         compile_node(fp, np->u.link.n2);
-        fprintf(fp, "; ");
+        fprintf(fp, ";\n");
         compile_node(fp, np->u.link.n3);
-        fprintf(fp, ")\n");
+        fprintf(fp, ";)\n");
         compile_node(fp, np->u.link.n4);
         break;
     case NK_CONTINUE:
-        fprintf(fp, "continue;\n");
+        fprintf(fp, ";continue;\n");
         break;
     case NK_BREAK:
-        fprintf(fp, "break;\n");
+        fprintf(fp, ";break;\n");
         break;
     case NK_RETURN:
-        fprintf(fp, "return ");
-        if (np->u.link.n1)
+        fprintf(fp, ";return\n");
+        if (np->u.link.n1) {
             compile_node(fp, np->u.link.n1);
-        fprintf(fp, ";\n");
+            fprintf(fp, "    pop eax\n");
+        }
         break;
     case NK_EXPR:
         compile_node(fp, np->u.link.n1);
-        fprintf(fp, ";\n");
         break;
     case NK_ADD:
     case NK_SUB:
@@ -220,6 +217,10 @@ bool compile_symbol(FILE *fp, const SYMBOL *sym)
         if (sym->sclass != SC_EXTERN)
             fprintf(fp, "%s:\n", sym->id);
         if (sym->has_body) {
+            fprintf(fp, "    push rbp\n");
+            fprintf(fp, "    mov rbp, rsp\n");
+            if (sym->var_num > 0)
+                fprintf(fp, "    sub rbp, %d\n", sym->var_num * 8);
             if (!compile_node(fp, sym->body_node))
                 return false;
             fprintf(fp, "    mov rsp, rbp\n");

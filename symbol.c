@@ -385,27 +385,6 @@ void print_global_symtab(void)
     print_symtab(global_table);
 }
 
-bool compile_symbol(FILE *fp, const SYMBOL *sym)
-{
-    fprintf(fp, ";SYM %s %s(%d) %s\n", sym->id, get_kind_string(sym->kind),
-        sym->var_num, get_storage_class_string(sym->sclass));
-    if (sym->kind == SK_FUNC && sym->has_body) {
-        if (sym->sclass != SC_STATIC)
-            fprintf(fp, ".global %s\n", sym->id);
-        if (sym->sclass != SC_EXTERN)
-            fprintf(fp, "%s:\n", sym->id);
-        if (sym->has_body) {
-            if (!compile_node(fp, sym->body_node))
-                return false;
-        }
-        fprintf(fp, "; -- %s\n", sym->id);
-    }
-    else if (sym->kind == SK_VAR) {
-        fprintf(fp, "%s:\n    .zero 8\n", sym->id);
-    }
-    return true;
-}
-
 
 bool compile_symtab(FILE *fp, const SYMTAB *tab)
 {

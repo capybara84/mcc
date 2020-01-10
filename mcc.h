@@ -188,8 +188,6 @@ const char *node_kind_to_str(NODE_KIND kind);
 bool node_can_take_addr(const NODE *np);
 void print_node(const NODE *np);
 
-bool compile_node(FILE *fp, const NODE *np);
-
 typedef struct {
     SCANNER *scan;
     TOKEN token;
@@ -199,5 +197,9 @@ PARSER *open_parser_text(const char *filename, const char *text);
 PARSER *open_parser(const char *filename);
 bool close_parser(PARSER *pars);
 bool parse(PARSER *pars);
+
+bool compile_node(FILE *fp, const NODE *np);
+bool compile_symbol(FILE *fp, const SYMBOL *sym);
+
 
 #endif

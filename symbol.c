@@ -2,24 +2,25 @@
 #include <string.h>
 #include "mcc.h"
 
-TYPE g_type_int = { T_INT, NULL };
-TYPE g_type_null = { T_NULL, NULL };
+TYPE g_type_int = { T_INT, NULL, NULL };
+TYPE g_type_null = { T_NULL, NULL, NULL };
 
 static SYMTAB *global_table = NULL;
 static SYMTAB *current_symtab = NULL;
+static SYMBOL *current_function = NULL;
 
-
-TYPE *new_type(TYPE_KIND kind, TYPE *ref_typ)
+TYPE *new_type(TYPE_KIND kind, TYPE *ref_typ, PARAM *param)
 {
     TYPE *typ = (TYPE*) alloc(sizeof (TYPE));
     typ->kind = kind;
     typ->type = ref_typ;
+    typ->param = param;
     return typ;
 }
 
 TYPE *dup_type(TYPE *tp)
 {
-    return new_type(tp->kind, tp->type);
+    return new_type(tp->kind, tp->type, tp->param);
 }
 
 bool equal_type(const TYPE *tl, const TYPE *tr)
@@ -36,6 +37,18 @@ bool equal_type(const TYPE *tl, const TYPE *tr)
         return false;
     if (!equal_type(tl->type, tr->type))
         return false;
+    {
+        PARAM *pl = tl->param;
+        PARAM *pr = tr->param;
+        while (pl != NULL && pr != NULL) {
+            if (!equal_type(pl->type, pr->type))
+                return false;
+            pl = pl->next;
+            pr = pr->next;
+        }
+        if (pl != NULL || pr != NULL)
+            return false;
+    }
     return true;
 }
 
@@ -162,12 +175,27 @@ bool type_warn_assign(const TYPE *lhs, const TYPE *rhs)
     return false;
 }
 
+PARAM *link_param(PARAM *top, TYPE *typ, char *id)
+{
+    PARAM *param = (PARAM*) alloc(sizeof (PARAM));
+    PARAM *p;
+    param->next = NULL;
+    param->id = id;
+    param->type = typ;
+    if (top == NULL)
+        return param;
+    for (p = top; p->next != NULL; p = p->next)
+        ;
+    p->next = param;
+    return top;
+}
+
 
 void print_type(const TYPE *typ)
 {
-    if (typ == NULL)
-        printf("NULL");
-    else {
+    PARAM *p;
+    if (typ == NULL) {
+    } else {
         switch (typ->kind) {
         case T_UNKNOWN:
             printf("UNKNOWN");
@@ -188,7 +216,13 @@ void print_type(const TYPE *typ)
         case T_FUNC:
             printf("FUNC <");
             print_type(typ->type);
-            printf("> PARAM ()");
+            printf("> (");
+            for (p = typ->param; p != NULL; p = p->next) {
+                print_type(p->type);
+                if (p->next != NULL)
+                    printf(", ");
+            }
+            printf(")");
             break;
         }
     }
@@ -196,7 +230,8 @@ void print_type(const TYPE *typ)
 
 
 SYMBOL *
-new_symbol(SYMBOL_KIND kind, STORAGE_CLASS sc, const char *id, TYPE *type)
+new_symbol(SYMBOL_KIND kind, STORAGE_CLASS sc, const char *id,
+            TYPE *type, int var_num)
 {
     SYMBOL *p;
 
@@ -211,6 +246,11 @@ new_symbol(SYMBOL_KIND kind, STORAGE_CLASS sc, const char *id, TYPE *type)
     p->has_body = false;
     p->body_node = NULL;
     p->tab = NULL;
+    p->var_num = var_num;
+    if (var_num > 0) {
+        assert(current_function);
+        current_function->var_num = var_num;
+    }
 
     return p;
 }
@@ -248,9 +288,9 @@ SYMTAB *new_symtab(SYMTAB *up)
     return tab;
 }
 
-SYMTAB *enter_scope(SYMTAB *up)
+SYMTAB *enter_scope(void)
 {
-    SYMTAB *tab = new_symtab(up ? up : current_symtab);
+    SYMTAB *tab = new_symtab(current_symtab);
     return current_symtab = tab;
 }
 
@@ -258,6 +298,24 @@ void leave_scope(void)
 {
     assert(current_symtab->up);
     current_symtab = current_symtab->up;
+}
+
+SYMTAB *enter_function(SYMBOL *sym)
+{
+    current_function = sym;
+    return enter_scope();
+}
+
+void leave_function(void)
+{
+    leave_scope();
+    current_function = NULL;
+}
+
+int get_func_var_num(void)
+{
+    assert(current_function);
+    return current_function->var_num;
 }
 
 bool init_symtab(void)
@@ -281,7 +339,7 @@ const char *get_storage_class_string(STORAGE_CLASS sc)
     return NULL;
 }
 
-const char *get_kind_string(SYMBOL_KIND kind)
+static const char *get_kind_string(SYMBOL_KIND kind)
 {
     switch (kind) {
     case SK_VAR:    return "VAR";
@@ -302,8 +360,8 @@ void print_symtab_1(const SYMTAB *tab)
 
 void print_symbol(const SYMBOL *sym)
 {
-    printf("SYM %s (%s) %s:", sym->id, get_kind_string(sym->kind),
-        get_storage_class_string(sym->sclass));
+    printf("SYM %s %s(%d) %s:", sym->id, get_kind_string(sym->kind),
+        sym->var_num, get_storage_class_string(sym->sclass));
     print_type(sym->type);
     printf("\n");
     if (sym->kind == SK_FUNC && sym->has_body) {

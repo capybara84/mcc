@@ -14,8 +14,6 @@ typedef int bool;
 #define false   0
 
 extern jmp_buf g_error_jmp_buf;
-extern FILE *g_stdout;
-extern FILE *g_stderr;
 
 bool is_verbose_level(int n);
 void set_verbose_level(int n);
@@ -26,20 +24,29 @@ void verror(const char *filename, int line, const char *s, va_list arg);
 void error(const char *filename, int line, const char *s, ...);
 
 typedef enum {
-    T_UNKNOWN, T_VOID, T_NULL, T_INT, T_POINTER, T_FUNC,
+    T_UNKNOWN, T_VOID, T_NULL, T_INT, T_POINTER, T_FUNC
 } TYPE_KIND;
 
 typedef struct type TYPE;
 
+typedef struct param PARAM;
+
 struct type {
     TYPE_KIND kind;
+    TYPE *type;
+    PARAM *param;
+};
+
+struct param {
+    PARAM *next;
+    char *id;
     TYPE *type;
 };
 
 extern TYPE g_type_int;
 extern TYPE g_type_null;
 
-TYPE *new_type(TYPE_KIND kind, TYPE *typ);
+TYPE *new_type(TYPE_KIND kind, TYPE *typ, PARAM *param);
 TYPE *dup_type(TYPE *typ);
 bool equal_type(const TYPE *tl, const TYPE *tr);
 bool type_is_void(const TYPE *typ);
@@ -57,6 +64,7 @@ bool type_can_rel(const TYPE *lhs, const TYPE *rhs);
 bool type_can_logical(const TYPE *lhs, const TYPE *rhs);
 bool type_can_assign(const TYPE *lhs, const TYPE *rhs);
 bool type_warn_assign(const TYPE *lhs, const TYPE *rhs);
+PARAM *link_param(PARAM *top, TYPE *typ, char *id);
 void print_type(const TYPE *typ);
 
 
@@ -82,6 +90,7 @@ struct symbol {
     bool has_body;
     NODE *body_node;
     SYMTAB *tab;
+    int var_num;
 };
 
 struct symtab {
@@ -90,18 +99,21 @@ struct symtab {
 };
 
 SYMBOL *new_symbol(SYMBOL_KIND kind, STORAGE_CLASS sc,
-                    const char *id, TYPE *type);
-
-bool init_symtab(void);
-void term_symtab(void);
-SYMTAB *new_symtab(SYMTAB *up);
-SYMTAB *enter_scope(SYMTAB *up);
-void leave_scope(void);
+                    const char *id, TYPE *type, int var_num);
 SYMBOL *lookup_symbol_local(const char *id);
 SYMBOL *lookup_symbol(const char *id);
+SYMTAB *new_symtab(SYMTAB *up);
+SYMTAB *enter_scope(void);
+void leave_scope(void);
+SYMTAB *enter_function(SYMBOL *sym);
+void leave_function(void);
+int get_func_var_num(void);
+bool init_symtab(void);
+void term_symtab(void);
 
 const char *get_storage_class_string(STORAGE_CLASS sc);
 void print_symbol(const SYMBOL *sym);
+void print_symtab_1(const SYMTAB *tab);
 void print_symtab(const SYMTAB *tab);
 void print_global_symtab(void);
 
@@ -135,6 +147,7 @@ const char *scan_token_to_string(SCANNER *scan, TOKEN tk);
 
 
 typedef enum {
+    NK_LINK,
     NK_COMPOUND, NK_IF, NK_WHILE, NK_FOR, NK_CONTINUE, NK_BREAK,
     NK_RETURN, NK_EXPR,
     NK_ASSIGN, NK_LOR, NK_LAND,
@@ -147,6 +160,7 @@ typedef enum {
 struct node {
     NODE_KIND kind;
     TYPE *type;
+    SYMTAB *symtab; /*TODO move inside union */
     union {
         struct {
             NODE *n1;

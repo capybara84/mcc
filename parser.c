@@ -300,7 +300,7 @@ static NODE *parse_unary_expression(PARSER *pars)
     case NK_ADDR:
         if (!node_can_take_addr(np))
             parser_error(pars, "cannot take the address");
-        np = new_node1(NK_ADDR, new_type(T_POINTER, np->type), np);
+        np = new_node1(NK_ADDR, new_type(T_POINTER, np->type, NULL), np);
         break;
     case NK_INDIR:
         if (!type_is_pointer(np->type))
@@ -537,6 +537,8 @@ static NODE *parse_assignment_expression(PARSER *pars)
         NODE *rhs;
         TYPE *typ;
         next(pars);
+        if (np->kind != NK_ID)
+            parser_error(pars, "invalid left value");
         rhs = parse_assignment_expression(pars);
         typ = type_check_bin(pars, NK_ASSIGN, np->type, rhs->type);
         np = new_node2(NK_ASSIGN, typ, np, rhs);
@@ -558,7 +560,7 @@ static NODE *parse_expression(PARSER *pars)
     return np;
 }
 
-static void parse_declaration(PARSER *pars);
+static void parse_declaration(PARSER *pars, int *var_num);
 static NODE *parse_statement(PARSER *pars);
 
 /*
@@ -567,26 +569,20 @@ compound_statement
 declaration_list
     = declaration {declaration}
 */
-static NODE *parse_compound_statement(PARSER *pars, SYMTAB **pptab)
+static NODE *parse_compound_statement(PARSER *pars, int var_num)
 {
-    NODE *np = NULL;
+    NODE *np = new_node(NK_COMPOUND, NULL);
 
     ENTER("parse_compound_statement");
 
-    if (pptab)
-        *pptab = enter_scope(*pptab);
-    else
-        enter_scope(NULL);
     next(pars); /* skip '{' */
     while (is_declaration(pars))
-        parse_declaration(pars);
-    /* TODO calc local table size */
+        parse_declaration(pars, &var_num);
     while (is_statement(pars)) {
         NODE *p = parse_statement(pars);
-        np = link_node(NK_COMPOUND, p, np);
+        np->u.link.n1 = link_node(NK_LINK, p, np->u.link.n1);
     }
     expect(pars, TK_END);
-    leave_scope();
     LEAVE("parse_compound_statement");
     return np;
 }
@@ -623,12 +619,16 @@ jump_statement
 static NODE *parse_statement(PARSER *pars)
 {
     NODE *np = NULL;
+    SYMTAB *tab;
 
     ENTER("parse_statement");
     switch (pars->token) {
     case TK_BEGIN:
         TRACE("parse_statement", "compound");
-        np = parse_compound_statement(pars, NULL);
+        tab = enter_scope();
+        np = parse_compound_statement(pars, get_func_var_num() + 1);
+        np->symtab = tab;
+        leave_scope();
         break;
     case TK_IF:
         TRACE("parse_statement", "if");
@@ -726,12 +726,122 @@ static NODE *parse_statement(PARSER *pars)
     return np;
 }
 
+static PARAM *parse_parameter_list(PARSER *pars);
+
+/*
+param_declarator
+	= {'*'} [IDENTIFIER | '(' param_declarator ')']
+        ['(' [parameter_list] ')']
+*/
+static void parse_param_declarator(PARSER *pars, TYPE **pptyp, char **id)
+{
+    PARAM *param_list = NULL;
+    TYPE *typ = NULL;
+
+    ENTER("parse_param_declarator");
+
+    assert(pptyp);
+    assert(*pptyp);
+
+    while (pars->token == TK_STAR) {
+        *pptyp = new_type(T_POINTER, *pptyp, NULL);
+        next(pars);
+    }
+    if (pars->token == TK_ID) {
+        *id = get_id(pars);
+        next(pars);
+    } else if (pars->token == TK_LPAR) {
+        typ = new_type(T_UNKNOWN, NULL, NULL);
+        next(pars);
+        parse_param_declarator(pars, &typ, id);
+        expect(pars, TK_RPAR);
+    }
+    if (pars->token == TK_LPAR) {
+        next(pars);
+        if (pars->token != TK_RPAR) {
+            param_list = parse_parameter_list(pars);
+        }
+        expect(pars, TK_RPAR);
+        *pptyp = new_type(T_FUNC, *pptyp, param_list);
+        if (typ) {
+            TYPE *p = typ;
+            while (p && p->type && p->type->kind != T_UNKNOWN)
+                p = p->type;
+            if (p->type) {
+                if (p->type->kind == T_UNKNOWN) {
+                    p->type = *pptyp;
+                    *pptyp = typ;
+                } else {
+                    assert(0);
+                }
+            } else {
+                assert(0);
+            }
+        }
+    } else if (typ) {
+        /*TODO*/
+        parser_error(pars, "syntax error (mcc)");
+    }
+
+    LEAVE("parse_param_declarator");
+}
+
+static void
+parse_declaration_specifiers(PARSER *pars, STORAGE_CLASS *sc, TYPE *typ);
+
+/*
+parameter_declaration
+	= declaration_specifiers [param_declarator]
+*/
+static TYPE *parse_parameter_declaration(PARSER *pars, char **id)
+{
+    STORAGE_CLASS sc;
+    TYPE *typ;
+
+    ENTER("parse_parameter_declaration");
+
+    typ = new_type(T_UNKNOWN, NULL, NULL);
+    sc = SC_DEFAULT;
+    parse_declaration_specifiers(pars, &sc, typ);
+    /* TODO check sc */
+
+    if (pars->token != TK_COMMA && pars->token != TK_RPAR)
+        parse_param_declarator(pars, &typ, id);
+
+    LEAVE("parse_parameter_declaration");
+    return typ;
+}
+
+/*
+parameter_list
+	= parameter_declaration {',' parameter_declaration}
+*/
+static PARAM *parse_parameter_list(PARSER *pars)
+{
+    PARAM *param_list;
+    TYPE *typ;
+    char *id = NULL;
+
+    ENTER("parse_parameter_list");
+    typ = parse_parameter_declaration(pars, &id);
+    param_list = link_param(NULL, typ, id);
+    while (pars->token == TK_COMMA) {
+        next(pars);
+        typ = parse_parameter_declaration(pars, &id);
+        param_list = link_param(param_list, typ, id);
+    }
+    LEAVE("parse_parameter_list");
+    return param_list;
+}
+
+
 /*
 declarator
-	= {'*'} (IDENTIFIER | '(' declarator ')') ['(' ')']
+	= {'*'} (IDENTIFIER | '(' declarator ')') ['(' [parameter_list] ')']
 */
-static void parse_declarator(PARSER *pars, TYPE **pptyp, char **id)
+static PARAM *parse_declarator(PARSER *pars, TYPE **pptyp, char **id)
 {
+    PARAM *param_list = NULL;
     TYPE *typ = NULL;
 
     ENTER("parse_declarator");
@@ -741,24 +851,27 @@ static void parse_declarator(PARSER *pars, TYPE **pptyp, char **id)
     assert(id);
 
     while (pars->token == TK_STAR) {
-        *pptyp = new_type(T_POINTER, *pptyp);
+        *pptyp = new_type(T_POINTER, *pptyp, NULL);
         next(pars);
     }
     if (pars->token == TK_ID) {
-        *id = pars->scan->id;
+        *id = get_id(pars);
         next(pars);
     } else if (pars->token == TK_LPAR) {
-        typ = new_type(T_UNKNOWN, NULL);
+        typ = new_type(T_UNKNOWN, NULL, NULL);
         next(pars);
-        parse_declarator(pars, &typ, id);
+        param_list = parse_declarator(pars, &typ, id);
         expect(pars, TK_RPAR);
     } else {
         parser_error(pars, "syntax error");
     }
     if (pars->token == TK_LPAR) {
         next(pars);
+        if (pars->token != TK_RPAR) {
+            param_list = parse_parameter_list(pars);
+        }
         expect(pars, TK_RPAR);
-        *pptyp = new_type(T_FUNC, *pptyp);
+        *pptyp = new_type(T_FUNC, *pptyp, param_list);
         if (typ) {
             TYPE *p = typ;
             while (p && p->type && p->type->kind != T_UNKNOWN)
@@ -779,6 +892,7 @@ static void parse_declarator(PARSER *pars, TYPE **pptyp, char **id)
         parser_error(pars, "syntax error (mcc)");
     }
     LEAVE("parse_declarator");
+    return param_list;
 }
 
 /*
@@ -846,14 +960,14 @@ declaration
 declarator_list
     = declarator {',' declarator}
 */
-static void parse_declaration(PARSER *pars)
+static void parse_declaration(PARSER *pars, int *var_num)
 {
     STORAGE_CLASS sc;
     TYPE *typ;
 
     ENTER("parse_declaration");
 
-    typ = new_type(T_UNKNOWN, NULL);
+    typ = new_type(T_UNKNOWN, NULL, NULL);
     sc = SC_DEFAULT;
     parse_declaration_specifiers(pars, &sc, typ);
 
@@ -862,13 +976,15 @@ static void parse_declaration(PARSER *pars)
         TYPE *ntyp;
         SYMBOL_KIND symkind;
         bool already = false;
+        PARAM *param_list;
 
         ntyp = dup_type(typ);
-        parse_declarator(pars, &ntyp, &id);
+        param_list = parse_declarator(pars, &ntyp, &id);
 
 
         if (is_verbose_level(1)) {
-            printf("local id:%s %s type:", id, get_storage_class_string(sc));
+            printf("local id:%s %d %s type:",
+                    id, *var_num, get_storage_class_string(sc));
             print_type(ntyp);
             printf("\n");
         }
@@ -890,8 +1006,10 @@ static void parse_declaration(PARSER *pars)
                 parser_error(pars, "'%s' duplicated", id);
             }
         }
-        if (!already)
-            new_symbol(symkind, sc, id, ntyp);
+        if (!already) {
+            int num = *var_num == 0 ? 0 : (*var_num)++;
+            new_symbol(symkind, sc, id, ntyp, num);
+        }
 
         if (pars->token != TK_COMMA)
             break;
@@ -913,14 +1031,15 @@ static bool parse_external_delaration(PARSER *pars)
     TYPE *typ;
     char *id;
     SYMBOL_KIND symkind;
+    PARAM *param_list;
 
     ENTER("parse_external_delaration");
 
-    typ = new_type(T_UNKNOWN, NULL);
+    typ = new_type(T_UNKNOWN, NULL, NULL);
     sc = SC_DEFAULT;
     parse_declaration_specifiers(pars, &sc, typ);
 
-    parse_declarator(pars, &typ, &id);
+    param_list = parse_declarator(pars, &typ, &id);
 
     symkind = (typ->kind == T_FUNC) ? SK_FUNC : SK_VAR;
 
@@ -940,20 +1059,34 @@ static bool parse_external_delaration(PARSER *pars)
 
     if (pars->token == TK_SEMI) {
         if (sym == NULL)
-            sym = new_symbol(symkind, sc, id, typ);
+            sym = new_symbol(symkind, sc, id, typ, 0);
         next(pars);
     } else if (pars->token == TK_BEGIN) {
         NODE *body;
+        PARAM *p;
+        int var_num;
         if (symkind != SK_FUNC)
             parser_error(pars, "invalid function syntax");
-        if (sym && sym->has_body)
-            parser_error(pars, "'%s' redefinition", id);
-        else
-            sym = new_symbol(SK_FUNC, sc, id, typ);
-        body = parse_compound_statement(pars, &sym->tab);
+        if (sym) {
+            if (sym->has_body)
+                parser_error(pars, "'%s' redefinition", id);
+        } else
+            sym = new_symbol(SK_FUNC, sc, id, typ, 0);
+        sym->tab = enter_function(sym);
+        var_num = -1;
+        for (p = param_list; p != NULL; p = p->next) {
+            new_symbol(SK_VAR, SC_DEFAULT, p->id, p->type, var_num--);
+            if (is_verbose_level(1)) {
+                printf("param id:%s type:", p->id);
+                print_type(p->type);
+                printf("\n");
+            }
+        }
+        body = parse_compound_statement(pars, 1);
         /*TODO calc local table size */
         sym->has_body = true;
         sym->body_node = body;
+        leave_function();
     } else {
         parser_error(pars, "syntax error");
     }

@@ -66,9 +66,5 @@ done:
 
 int main(int argc, char *argv[])
 {
-    int result;
-    init_symtab();
-    result = parse_command_line(argc, argv);
-    term_symtab();
-    return result;
+    return parse_command_line(argc, argv);
 }

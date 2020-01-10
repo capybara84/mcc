@@ -28,7 +28,18 @@ type_specifier
 	= VOID | INT
 
 declarator
-	= {'*'} (IDENTIFIER | '(' declarator ')') ['(' ')']
+	= {'*'} (IDENTIFIER | '(' declarator ')') ['(' [parameter_list] ')']
+
+abstract_declarator
+    =  '*' {'*'}
+    = {'*'} '(' abstract_declarator ')' ['(' [parameter_list] ')']
+
+parameter_list
+	= parameter_declaration {',' parameter_declaration}
+
+parameter_declaration
+	= declaration_specifiers declarator
+    | declaration_specifiers [abstract_declarator]
 
 statement
 	= expression_statement

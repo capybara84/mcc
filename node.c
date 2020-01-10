@@ -105,34 +105,34 @@ const char *node_kind_to_str(NODE_KIND kind)
     return "";
 }
 
-void print_node(const NODE *np)
+void fprint_node(FILE *fp, const NODE *np)
 {
     if (np == NULL) {
 /*
-        printf("<NULL>");
+        fprintf(fp, "<NULL>");
 */
         return;
     }
     switch (np->kind) {
     case NK_LINK:
-        print_node(np->u.link.n1);
-        print_node(np->u.link.n2);
+        fprint_node(fp, np->u.link.n1);
+        fprint_node(fp, np->u.link.n2);
         break;
     case NK_COMPOUND:
-        printf("{\n");
+        fprintf(fp, "{\n");
         if (np->symtab) {
-            printf("local symtab\n");
-            print_symtab_1(np->symtab);
+            fprintf(fp, "local symtab\n");
+            fprint_symtab_1(fp, np->symtab);
         }
-        print_node(np->u.link.n1);
-        printf("}\n");
+        fprint_node(fp, np->u.link.n1);
+        fprintf(fp, "}\n");
         break;
     case NK_IF:
-        printf("if (");
-        print_node(np->u.link.n1);
-        printf(")\n");
-        print_node(np->u.link.n2);
-        printf("\n");
+        fprintf("if (");
+        fprint_node(np->u.link.n1);
+        fprintf(")\n");
+        fprint_node(np->u.link.n2);
+        fprintf("\n");
         if (np->u.link.n3) {
             printf("else\n");
             print_node(np->u.link.n3);
@@ -256,3 +256,7 @@ void print_node(const NODE *np)
 }
 
 
+void print_node(const NODE *np)
+{
+    fprint_node(stdout, np);
+}

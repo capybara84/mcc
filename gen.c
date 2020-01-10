@@ -214,8 +214,6 @@ bool compile_node(FILE *fp, const NODE *np)
 
 bool compile_symbol(FILE *fp, const SYMBOL *sym)
 {
-    fprintf(fp, ";SYM %s (%d) %s\n", sym->id,
-        sym->var_num, get_storage_class_string(sym->sclass));
     if (sym->kind == SK_FUNC && sym->has_body) {
         if (sym->sclass != SC_STATIC)
             fprintf(fp, ".global %s\n", sym->id);

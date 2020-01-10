@@ -65,6 +65,7 @@ bool type_can_logical(const TYPE *lhs, const TYPE *rhs);
 bool type_can_assign(const TYPE *lhs, const TYPE *rhs);
 bool type_warn_assign(const TYPE *lhs, const TYPE *rhs);
 PARAM *link_param(PARAM *top, TYPE *typ, char *id);
+void fprint_type(FILE *fp, const TYPE *typ);
 void print_type(const TYPE *typ);
 
 
@@ -113,6 +114,7 @@ void term_symtab(void);
 
 const char *get_storage_class_string(STORAGE_CLASS sc);
 void print_symbol(const SYMBOL *sym);
+void fprint_symtab_1(FILE *fp, const SYMTAB *tab);
 void print_symtab_1(const SYMTAB *tab);
 void print_symtab(const SYMTAB *tab);
 void print_global_symtab(void);
@@ -186,6 +188,7 @@ NODE *new_node_sym(NODE_KIND kind, SYMBOL *sym);
 NODE *new_node_int(NODE_KIND kind, int num);
 const char *node_kind_to_str(NODE_KIND kind);
 bool node_can_take_addr(const NODE *np);
+void fprint_node(FILE *fp, const NODE *np);
 void print_node(const NODE *np);
 
 typedef struct {

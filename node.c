@@ -128,56 +128,56 @@ void fprint_node(FILE *fp, const NODE *np)
         fprintf(fp, "}\n");
         break;
     case NK_IF:
-        fprintf("if (");
-        fprint_node(np->u.link.n1);
-        fprintf(")\n");
-        fprint_node(np->u.link.n2);
-        fprintf("\n");
+        fprintf(fp, "if (");
+        fprint_node(fp, np->u.link.n1);
+        fprintf(fp, ")\n");
+        fprint_node(fp, np->u.link.n2);
+        fprintf(fp, "\n");
         if (np->u.link.n3) {
-            printf("else\n");
-            print_node(np->u.link.n3);
+            fprintf(fp, "else\n");
+            fprint_node(fp, np->u.link.n3);
         }
         break;
     case NK_WHILE:
-        printf("while (");
-        print_node(np->u.link.n1);
-        printf(")\n");
-        print_node(np->u.link.n2);
+        fprintf(fp, "while (");
+        fprint_node(fp, np->u.link.n1);
+        fprintf(fp, ")\n");
+        fprint_node(fp, np->u.link.n2);
         break;
     case NK_FOR:
-        printf("for (");
-        print_node(np->u.link.n1);
-        printf("; ");
-        print_node(np->u.link.n2);
-        printf("; ");
-        print_node(np->u.link.n3);
-        printf(")\n");
-        print_node(np->u.link.n4);
+        fprintf(fp, "for (");
+        fprint_node(fp, np->u.link.n1);
+        fprintf(fp, "; ");
+        fprint_node(fp, np->u.link.n2);
+        fprintf(fp, "; ");
+        fprint_node(fp, np->u.link.n3);
+        fprintf(fp, ")\n");
+        fprint_node(fp, np->u.link.n4);
         break;
     case NK_CONTINUE:
-        printf("continue;\n");
+        fprintf(fp, "continue;\n");
         break;
     case NK_BREAK:
-        printf("break;\n");
+        fprintf(fp, "break;\n");
         break;
     case NK_RETURN:
-        printf("return ");
+        fprintf(fp, "return ");
         if (np->u.link.n1)
-            print_node(np->u.link.n1);
-        printf(";\n");
+            fprint_node(fp, np->u.link.n1);
+        fprintf(fp, ";\n");
         if (is_verbose_level(1)) {
-            printf(" : ");
-            print_type(np->type);
-            printf("\n");
+            fprintf(fp, " : ");
+            fprint_type(fp, np->type);
+            fprintf(fp, "\n");
         }
         break;
     case NK_EXPR:
-        print_node(np->u.link.n1);
-        printf(";\n");
+        fprint_node(fp, np->u.link.n1);
+        fprintf(fp, ";\n");
         if (is_verbose_level(1)) {
-            printf(" : ");
-            print_type(np->type);
-            printf("\n");
+            fprintf(fp, " : ");
+            fprint_type(fp, np->type);
+            fprintf(fp, "\n");
         }
         break;
     case NK_ASSIGN:
@@ -193,63 +193,63 @@ void fprint_node(FILE *fp, const NODE *np)
     case NK_SUB:
     case NK_MUL:
     case NK_DIV:
-        printf("(");
-        print_node(np->u.link.n1);
-        printf(" %s ", node_kind_to_str(np->kind));
-        print_node(np->u.link.n2);
-        printf(")");
+        fprintf(fp, "(");
+        fprint_node(fp, np->u.link.n1);
+        fprintf(fp, " %s ", node_kind_to_str(np->kind));
+        fprint_node(fp, np->u.link.n2);
+        fprintf(fp, ")");
         if (is_verbose_level(1)) {
-            printf(" : ");
-            print_type(np->type);
-            printf("\n");
+            fprintf(fp, " : ");
+            fprint_type(fp, np->type);
+            fprintf(fp, "\n");
         }
         break;
     case NK_ADDR:
     case NK_INDIR:
     case NK_MINUS:
     case NK_NOT:
-        printf("(%s", node_kind_to_str(np->kind));
-        print_node(np->u.link.n1);
-        printf(")");
+        fprintf(fp, "(%s", node_kind_to_str(np->kind));
+        fprint_node(fp, np->u.link.n1);
+        fprintf(fp, ")");
         if (is_verbose_level(1)) {
-            printf(" : ");
-            print_type(np->type);
-            printf("\n");
+            fprintf(fp, " : ");
+            fprint_type(fp, np->type);
+            fprintf(fp, "\n");
         }
         break;
     case NK_ID:
         assert(np->u.sym);
-        printf("%s", np->u.sym->id);
+        fprintf(fp, "%s", np->u.sym->id);
         if (is_verbose_level(1)) {
-            printf(" : ");
-            print_type(np->type);
-            printf("\n");
+            fprintf(fp, " : ");
+            fprint_type(fp, np->type);
+            fprintf(fp, "\n");
         }
         break;
     case NK_INT_LIT:
-        printf("%d", np->u.num);
+        fprintf(fp, "%d", np->u.num);
         if (is_verbose_level(1)) {
-            printf(" : ");
-            print_type(np->type);
-            printf("\n");
+            fprintf(fp, " : ");
+            fprint_type(fp, np->type);
+            fprintf(fp, "\n");
         }
         break;
     case NK_CALL:
-        print_node(np->u.link.n1);
-        printf("(");
-        print_node(np->u.link.n2);
-        printf(")");
+        fprint_node(fp, np->u.link.n1);
+        fprintf(fp, "(");
+        fprint_node(fp, np->u.link.n2);
+        fprintf(fp, ")");
         if (is_verbose_level(1)) {
-            printf(" : ");
-            print_type(np->type);
-            printf("\n");
+            fprintf(fp, " : ");
+            fprint_type(fp, np->type);
+            fprintf(fp, "\n");
         }
         break;
     case NK_ARG:
-        print_node(np->u.link.n1);
+        fprint_node(fp, np->u.link.n1);
         if (np->u.link.n2) {
-            printf(", ");
-            print_node(np->u.link.n2);
+            fprintf(fp, ", ");
+            fprint_node(fp, np->u.link.n2);
         }
         break;
     }

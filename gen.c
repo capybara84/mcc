@@ -1,6 +1,10 @@
 #include <assert.h>
 #include "mcc.h"
 
+void gen_header(FILE *fp)
+{
+    fprintf(fp, ".intel_syntax noprefix\n");
+}
 
 void gen_lval(FILE *fp, const NODE *np)
 {
@@ -11,7 +15,8 @@ void gen_lval(FILE *fp, const NODE *np)
 */
     assert(np->u.sym);
     fprintf(fp, "    mov rax, rbp\n");
-    fprintf(fp, "    sub rax, %d   ; %s\n", np->u.sym->var_num * 8, np->u.sym->id);
+    fprintf(fp, "    sub rax, %d   ; %s\n", np->u.sym->var_num * 8,
+                    np->u.sym->id);
     fprintf(fp, "    push rax\n");
 }
 
@@ -27,9 +32,11 @@ bool compile_node(FILE *fp, const NODE *np)
         compile_node(fp, np->u.link.n2);
         break;
     case NK_COMPOUND:
+    /*
         if (np->symtab) {
             fprintf(fp, "; local symtab\n");
         }
+    */
         compile_node(fp, np->u.link.n1);
         break;
     case NK_IF:
@@ -65,10 +72,15 @@ bool compile_node(FILE *fp, const NODE *np)
         fprintf(fp, ";break;\n");
         break;
     case NK_RETURN:
+    /*
         fprintf(fp, ";return\n");
+    */
         if (np->u.link.n1) {
             compile_node(fp, np->u.link.n1);
-            fprintf(fp, "    pop eax\n");
+            fprintf(fp, "    pop rax\n");
+            fprintf(fp, "    mov rsp, rbp\n");
+            fprintf(fp, "    pop rbp\n");
+            fprintf(fp, "    ret\n");
         }
         break;
     case NK_EXPR:

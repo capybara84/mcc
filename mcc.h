@@ -201,6 +201,7 @@ PARSER *open_parser(const char *filename);
 bool close_parser(PARSER *pars);
 bool parse(PARSER *pars);
 
+void gen_header(FILE *fp);
 bool compile_node(FILE *fp, const NODE *np);
 bool compile_symbol(FILE *fp, const SYMBOL *sym);
 

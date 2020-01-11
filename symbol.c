@@ -418,6 +418,6 @@ bool compile_symtab(FILE *fp, const SYMTAB *tab)
 
 bool compile_all(FILE *fp)
 {
-    fprintf(fp, ".intel_syntax noprefix\n");
+    gen_header(fp);
     return compile_symtab(fp, global_table);
 }

@@ -976,10 +976,9 @@ static void parse_declaration(PARSER *pars, int *var_num)
         TYPE *ntyp;
         SYMBOL_KIND symkind;
         bool already = false;
-        PARAM *param_list;
 
         ntyp = dup_type(typ);
-        param_list = parse_declarator(pars, &ntyp, &id);
+        parse_declarator(pars, &ntyp, &id);
 
 
         if (is_verbose_level(1)) {

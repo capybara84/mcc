@@ -19,9 +19,14 @@ bool is_verbose_level(int n);
 void set_verbose_level(int n);
 void *alloc(size_t size);
 
-void vwarning(const char *filename, int line, const char *s, va_list arg);
-void verror(const char *filename, int line, const char *s, va_list arg);
-void error(const char *filename, int line, const char *s, ...);
+typedef struct {
+    const char *filename;
+    int line;
+} POS;
+
+void vwarning(const POS *pos, const char *s, va_list arg);
+void verror(const POS *pos, const char *s, va_list arg);
+void error(const POS *pos, const char *s, ...);
 
 typedef enum {
     T_UNKNOWN, T_VOID, T_NULL, T_INT, T_POINTER, T_FUNC
@@ -133,10 +138,9 @@ typedef enum {
 typedef struct {
     const char *source;
     int size;
-    int pos;
+    int current;
     int ch;
-    int line;
-    const char *filename;
+    POS pos;
     int num;
     char *id;
 } SCANNER;
@@ -163,6 +167,7 @@ typedef enum {
 
 struct node {
     NODE_KIND kind;
+    POS pos;
     TYPE *type;
     union {
         struct {
@@ -181,15 +186,17 @@ struct node {
     } u;
 };
 
-NODE *new_node(NODE_KIND kind, TYPE *typ);
-NODE *new_node1(NODE_KIND kind, TYPE *typ, NODE *n1);
-NODE *new_node2(NODE_KIND kind, TYPE *typ, NODE *n1, NODE *n2);
-NODE *new_node3(NODE_KIND kind, TYPE *typ, NODE *n1, NODE *n2, NODE *n3);
-NODE *new_node4(NODE_KIND kind, TYPE *typ,
+NODE *new_node(NODE_KIND kind, const POS* pos, TYPE *typ);
+NODE *new_node1(NODE_KIND kind, const POS *pos, TYPE *typ, NODE *n1);
+NODE *new_node2(NODE_KIND kind, const POS *pos, TYPE *typ,
+                NODE *n1, NODE *n2);
+NODE *new_node3(NODE_KIND kind, const POS *pos, TYPE *typ,
+                NODE *n1, NODE *n2, NODE *n3);
+NODE *new_node4(NODE_KIND kind, const POS *pos, TYPE *typ,
                     NODE *n1, NODE *n2, NODE *n3, NODE *n4);
-NODE *link_node(NODE_KIND kind, NODE *node, NODE *top);
-NODE *new_node_sym(NODE_KIND kind, SYMBOL *sym);
-NODE *new_node_int(NODE_KIND kind, int num);
+NODE *link_node(NODE_KIND kind, const POS *pos, NODE *node, NODE *top);
+NODE *new_node_sym(NODE_KIND kind, const POS *pos, SYMBOL *sym);
+NODE *new_node_int(NODE_KIND kind, const POS *pos, int num);
 const char *node_kind_to_str(NODE_KIND kind);
 bool node_can_take_addr(const NODE *np);
 void fprint_node(FILE *fp, const NODE *np);

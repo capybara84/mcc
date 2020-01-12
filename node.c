@@ -1,42 +1,45 @@
 #include <assert.h>
 #include "mcc.h"
 
-NODE *new_node(NODE_KIND kind, TYPE *typ)
+NODE *new_node(NODE_KIND kind, const POS *pos, TYPE *typ)
 {
     NODE *np = (NODE*) alloc(sizeof (NODE));
     np->kind = kind;
+    np->pos = *pos;
     np->type = typ;
     np->u.link.n1 = np->u.link.n2 = np->u.link.n3 = np->u.link.n4 = NULL;
     return np;
 }
 
-NODE *new_node1(NODE_KIND kind, TYPE *typ, NODE *n1)
+NODE *new_node1(NODE_KIND kind, const POS *pos, TYPE *typ, NODE *n1)
 {
-    NODE *np = new_node(kind, typ);
+    NODE *np = new_node(kind, pos, typ);
     np->u.link.n1 = n1;
     return np;
 }
 
-NODE *new_node2(NODE_KIND kind, TYPE *typ, NODE *n1, NODE *n2)
+NODE *new_node2(NODE_KIND kind, const POS *pos, TYPE *typ, NODE *n1, NODE *n2)
 {
-    NODE *np = new_node(kind, typ);
+    NODE *np = new_node(kind, pos, typ);
     np->u.link.n1 = n1;
     np->u.link.n2 = n2;
     return np;
 }
 
-NODE *new_node3(NODE_KIND kind, TYPE *typ, NODE *n1, NODE *n2, NODE *n3)
+NODE *new_node3(NODE_KIND kind, const POS *pos, TYPE *typ,
+                NODE *n1, NODE *n2, NODE *n3)
 {
-    NODE *np = new_node(kind, typ);
+    NODE *np = new_node(kind, pos, typ);
     np->u.link.n1 = n1;
     np->u.link.n2 = n2;
     np->u.link.n3 = n3;
     return np;
 }
 
-NODE *new_node4(NODE_KIND kind, TYPE *typ, NODE *n1, NODE *n2, NODE *n3, NODE *n4)
+NODE *new_node4(NODE_KIND kind, const POS *pos, TYPE *typ,
+                NODE *n1, NODE *n2, NODE *n3, NODE *n4)
 {
-    NODE *np = new_node(kind, typ);
+    NODE *np = new_node(kind, pos, typ);
     np->u.link.n1 = n1;
     np->u.link.n2 = n2;
     np->u.link.n3 = n3;
@@ -44,12 +47,12 @@ NODE *new_node4(NODE_KIND kind, TYPE *typ, NODE *n1, NODE *n2, NODE *n3, NODE *n
     return np;
 }
 
-NODE *link_node(NODE_KIND kind, NODE *node, NODE *top)
+NODE *link_node(NODE_KIND kind, const POS *pos, NODE *node, NODE *top)
 {
     NODE *np;
     NODE *p;
 
-    np = new_node(kind, NULL);
+    np = new_node(kind, pos, NULL);
     np->u.comp.left = node;
     np->u.comp.right = NULL;
     if (top == NULL)
@@ -60,18 +63,18 @@ NODE *link_node(NODE_KIND kind, NODE *node, NODE *top)
     return top;
 }
 
-NODE *new_node_sym(NODE_KIND kind, SYMBOL *sym)
+NODE *new_node_sym(NODE_KIND kind, const POS *pos, SYMBOL *sym)
 {
     NODE *np;
-    np = new_node(kind, sym->type);
+    np = new_node(kind, pos, sym->type);
     np->u.sym = sym;
     return np;
 }
 
-NODE *new_node_int(NODE_KIND kind, int num)
+NODE *new_node_int(NODE_KIND kind, const POS *pos, int num)
 {
     NODE *np;
-    np = new_node(kind, (num == 0) ? &g_type_null : &g_type_int);
+    np = new_node(kind, pos, (num == 0) ? &g_type_null : &g_type_int);
     np->u.num = num;
     return np;
 }
@@ -120,6 +123,7 @@ void fprint_node(FILE *fp, const NODE *np)
         fprint_node(fp, np->u.comp.right);
         break;
     case NK_COMPOUND:
+        fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprintf(fp, "{\n");
         if (np->u.comp.symtab) {
             fprintf(fp, "local symtab\n");
@@ -129,6 +133,7 @@ void fprint_node(FILE *fp, const NODE *np)
         fprintf(fp, "}\n");
         break;
     case NK_IF:
+        fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprintf(fp, "if (");
         fprint_node(fp, np->u.link.n1);
         fprintf(fp, ")\n");
@@ -140,12 +145,14 @@ void fprint_node(FILE *fp, const NODE *np)
         }
         break;
     case NK_WHILE:
+        fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprintf(fp, "while (");
         fprint_node(fp, np->u.link.n1);
         fprintf(fp, ")\n");
         fprint_node(fp, np->u.link.n2);
         break;
     case NK_FOR:
+        fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprintf(fp, "for (");
         fprint_node(fp, np->u.link.n1);
         fprintf(fp, "; ");
@@ -156,12 +163,15 @@ void fprint_node(FILE *fp, const NODE *np)
         fprint_node(fp, np->u.link.n4);
         break;
     case NK_CONTINUE:
+        fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprintf(fp, "continue;\n");
         break;
     case NK_BREAK:
+        fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprintf(fp, "break;\n");
         break;
     case NK_RETURN:
+        fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprintf(fp, "return ");
         if (np->u.link.n1)
             fprint_node(fp, np->u.link.n1);
@@ -173,6 +183,7 @@ void fprint_node(FILE *fp, const NODE *np)
         }
         break;
     case NK_EXPR:
+        fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprint_node(fp, np->u.link.n1);
         fprintf(fp, ";\n");
         if (is_verbose_level(1)) {

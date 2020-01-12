@@ -8,15 +8,15 @@ SYM q VAR(3) DEFAULT:POINTER to int
 SYM p VAR(2) DEFAULT:POINTER to int
 SYM pf VAR(1) DEFAULT:POINTER to FUNC <void> ()
 {
-{
-(p = q);
-(p = bar);
-(q = (&bar));
-(pf = bar);
-(pf = (&bar));
-(pf < bar);
-(p = 0);
-(p = 1);
+test_parser3.c(4):{
+test_parser3.c(9):(p = q);
+test_parser3.c(10):(p = bar);
+test_parser3.c(11):(q = (&bar));
+test_parser3.c(13):(pf = bar);
+test_parser3.c(14):(pf = (&bar));
+test_parser3.c(16):(pf < bar);
+test_parser3.c(18):(p = 0);
+test_parser3.c(19):(p = 1);
 }
 }
 SYM bar FUNC(0) DEFAULT:FUNC <void> ()

@@ -15,7 +15,7 @@ int scan_file(const char *filename)
         return 1;
     }
     while ((tk = next_token(scan)) != TK_EOF) {
-        printf("%s(%d): %s\n", scan->filename, scan->line,
+        printf("%s(%d): %s\n", scan->pos.filename, scan->pos.line,
                 token_to_string(tk));
     }
     close_scanner(scan);

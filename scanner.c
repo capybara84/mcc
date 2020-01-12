@@ -47,10 +47,10 @@ SCANNER *open_scanner_text(const char *filename, const char *text)
     SCANNER *s = (SCANNER*) alloc(sizeof (SCANNER));
     s->source = text;
     s->size = strlen(text);
-    s->pos = 0;
+    s->current = 0;
     s->ch = ' ';
-    s->line = 1;
-    s->filename = filename;
+    s->pos.line = 1;
+    s->pos.filename = filename;
     s->num = 0;
     s->id = NULL;
     return s;
@@ -115,11 +115,12 @@ static int is_alnum(int ch)
 static int next_char(SCANNER *scan)
 {
     if (scan->ch == '\n')
-        scan->line++;
-    scan->ch = scan->source[scan->pos++];
+        scan->pos.line++;
+    scan->ch = scan->source[scan->current++];
 
 /*
-    printf("%s(%d):next_char: '%c'\n", scan->filename, scan->line, scan->ch);
+    printf("%s(%d):next_char: '%c'\n",
+            scan->pos.filename, scan->pos.line, scan->ch);
 */
 
     return scan->ch;
@@ -171,7 +172,7 @@ static void skip_comment(SCANNER *scan)
     next_char(scan);    /* skip '*' */
     for (;;) {
         if (scan->ch == EOF) {
-            error(scan->filename, scan->line, "unterminated comment");
+            error(&scan->pos, "unterminated comment");
             return;
         }
         if (scan->ch != '*')
@@ -254,7 +255,7 @@ TOKEN next_token(SCANNER *scan)
         default:
             break;
         }
-        error(scan->filename, scan->line,
+        error(&scan->pos,
             (isprint(scan->ch) ? "illegal character '%c'"
                               : "illegal character (code=%02d)"), scan->ch);
         next_char(scan);

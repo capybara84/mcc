@@ -164,7 +164,6 @@ typedef enum {
 struct node {
     NODE_KIND kind;
     TYPE *type;
-    SYMTAB *symtab; /*TODO move inside union */
     union {
         struct {
             NODE *n1;
@@ -172,6 +171,11 @@ struct node {
             NODE *n3;
             NODE *n4;
         } link;
+        struct {
+            NODE *left;
+            NODE *right;
+            SYMTAB *symtab;
+        } comp;
         SYMBOL *sym;
         int num;
     } u;

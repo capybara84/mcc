@@ -580,7 +580,7 @@ static NODE *parse_compound_statement(PARSER *pars, int var_num)
         parse_declaration(pars, &var_num);
     while (is_statement(pars)) {
         NODE *p = parse_statement(pars);
-        np->u.link.n1 = link_node(NK_LINK, p, np->u.link.n1);
+        np->u.comp.left = link_node(NK_LINK, p, np->u.comp.left);
     }
     expect(pars, TK_END);
     LEAVE("parse_compound_statement");
@@ -627,7 +627,8 @@ static NODE *parse_statement(PARSER *pars)
         TRACE("parse_statement", "compound");
         tab = enter_scope();
         np = parse_compound_statement(pars, get_func_var_num() + 1);
-        np->symtab = tab;
+        assert(np->kind == NK_COMPOUND);
+        np->u.comp.symtab = tab;
         leave_scope();
         break;
     case TK_IF:

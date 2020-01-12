@@ -6,6 +6,7 @@ NODE *new_node(NODE_KIND kind, TYPE *typ)
     NODE *np = (NODE*) alloc(sizeof (NODE));
     np->kind = kind;
     np->type = typ;
+    np->u.link.n1 = np->u.link.n2 = np->u.link.n3 = np->u.link.n4 = NULL;
     return np;
 }
 
@@ -49,13 +50,13 @@ NODE *link_node(NODE_KIND kind, NODE *node, NODE *top)
     NODE *p;
 
     np = new_node(kind, NULL);
-    np->u.link.n1 = node;
-    np->u.link.n2 = NULL;
+    np->u.comp.left = node;
+    np->u.comp.right = NULL;
     if (top == NULL)
         return np;
-    for (p = top; p->u.link.n2 != NULL; p = p->u.link.n2)
+    for (p = top; p->u.comp.right != NULL; p = p->u.comp.right)
         ;
-    p->u.link.n2 = np;
+    p->u.comp.right = np;
     return top;
 }
 
@@ -115,16 +116,16 @@ void fprint_node(FILE *fp, const NODE *np)
     }
     switch (np->kind) {
     case NK_LINK:
-        fprint_node(fp, np->u.link.n1);
-        fprint_node(fp, np->u.link.n2);
+        fprint_node(fp, np->u.comp.left);
+        fprint_node(fp, np->u.comp.right);
         break;
     case NK_COMPOUND:
         fprintf(fp, "{\n");
-        if (np->symtab) {
+        if (np->u.comp.symtab) {
             fprintf(fp, "local symtab\n");
-            fprint_symtab_1(fp, np->symtab);
+            fprint_symtab_1(fp, np->u.comp.symtab);
         }
-        fprint_node(fp, np->u.link.n1);
+        fprint_node(fp, np->u.comp.left);
         fprintf(fp, "}\n");
         break;
     case NK_IF:

@@ -28,16 +28,11 @@ bool compile_node(FILE *fp, const NODE *np)
 
     switch (np->kind) {
     case NK_LINK:
-        compile_node(fp, np->u.link.n1);
-        compile_node(fp, np->u.link.n2);
+        compile_node(fp, np->u.comp.left);
+        compile_node(fp, np->u.comp.right);
         break;
     case NK_COMPOUND:
-    /*
-        if (np->symtab) {
-            fprintf(fp, "; local symtab\n");
-        }
-    */
-        compile_node(fp, np->u.link.n1);
+        compile_node(fp, np->u.comp.left);
         break;
     case NK_IF:
         fprintf(fp, ";if (\n");

@@ -123,7 +123,8 @@ void fprint_node(FILE *fp, const NODE *np)
         fprint_node(fp, np->u.comp.right);
         break;
     case NK_COMPOUND:
-        fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
+        if (is_verbose_level(2))
+            fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprintf(fp, "{\n");
         if (np->u.comp.symtab) {
             fprintf(fp, "local symtab\n");
@@ -133,7 +134,8 @@ void fprint_node(FILE *fp, const NODE *np)
         fprintf(fp, "}\n");
         break;
     case NK_IF:
-        fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
+        if (is_verbose_level(2))
+            fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprintf(fp, "if (");
         fprint_node(fp, np->u.link.n1);
         fprintf(fp, ")\n");
@@ -145,14 +147,16 @@ void fprint_node(FILE *fp, const NODE *np)
         }
         break;
     case NK_WHILE:
-        fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
+        if (is_verbose_level(2))
+            fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprintf(fp, "while (");
         fprint_node(fp, np->u.link.n1);
         fprintf(fp, ")\n");
         fprint_node(fp, np->u.link.n2);
         break;
     case NK_FOR:
-        fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
+        if (is_verbose_level(2))
+            fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprintf(fp, "for (");
         fprint_node(fp, np->u.link.n1);
         fprintf(fp, "; ");
@@ -163,15 +167,18 @@ void fprint_node(FILE *fp, const NODE *np)
         fprint_node(fp, np->u.link.n4);
         break;
     case NK_CONTINUE:
-        fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
+        if (is_verbose_level(2))
+            fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprintf(fp, "continue;\n");
         break;
     case NK_BREAK:
-        fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
+        if (is_verbose_level(2))
+            fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprintf(fp, "break;\n");
         break;
     case NK_RETURN:
-        fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
+        if (is_verbose_level(2))
+            fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprintf(fp, "return ");
         if (np->u.link.n1)
             fprint_node(fp, np->u.link.n1);
@@ -183,7 +190,8 @@ void fprint_node(FILE *fp, const NODE *np)
         }
         break;
     case NK_EXPR:
-        fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
+        if (is_verbose_level(2))
+            fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprint_node(fp, np->u.link.n1);
         fprintf(fp, ";\n");
         if (is_verbose_level(1)) {

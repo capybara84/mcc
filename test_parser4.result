@@ -7,7 +7,7 @@ SYM c VAR(-3) DEFAULT:int
 SYM b VAR(-2) DEFAULT:int
 SYM a VAR(-1) DEFAULT:int
 {
-test_parser4.c(12):{
+{
 }
 }
 SYM sub FUNC(0) DEFAULT:FUNC <int> (int, int)
@@ -17,8 +17,8 @@ SYM result VAR(1) DEFAULT:int
 SYM y VAR(-2) DEFAULT:int
 SYM x VAR(-1) DEFAULT:int
 {
-test_parser4.c(5):{
-test_parser4.c(7):(result = (x + y));
-test_parser4.c(8):return result;
+{
+(result = (x + y));
+return result;
 }
 }

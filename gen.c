@@ -1,6 +1,13 @@
 #include <assert.h>
 #include "mcc.h"
 
+static int s_label_number = 0;
+
+int new_label(void)
+{
+    return s_label_number++;
+}
+
 void gen_header(FILE *fp)
 {
     fprintf(fp, ".intel_syntax noprefix\n");
@@ -9,10 +16,8 @@ void gen_header(FILE *fp)
 void gen_lval(FILE *fp, const NODE *np)
 {
     assert(np->kind == NK_ID);
-/*
     if (np->kind != NK_ID)
-        error("invalid left value (not variable)");
-*/
+        error(&np->pos, "invalid left value (not variable)");
     assert(np->u.sym);
     fprintf(fp, "    mov rax, rbp\n");
     fprintf(fp, "    sub rax, %d   ; %s\n", np->u.sym->var_num * 8,
@@ -22,6 +27,8 @@ void gen_lval(FILE *fp, const NODE *np)
 
 bool compile_node(FILE *fp, const NODE *np)
 {
+    int label1, label2;
+
     if (np == NULL) {
         return true;
     }
@@ -32,44 +39,63 @@ bool compile_node(FILE *fp, const NODE *np)
         compile_node(fp, np->u.comp.right);
         break;
     case NK_COMPOUND:
+        fprintf(fp, "; %s(%d)\n", np->pos.filename, np->pos.line);
         compile_node(fp, np->u.comp.left);
         break;
     case NK_IF:
-        fprintf(fp, ";if (\n");
+        fprintf(fp, "; %s(%d) IF\n", np->pos.filename, np->pos.line);
         compile_node(fp, np->u.link.n1);
-        fprintf(fp, ";)\n");
+        fprintf(fp, "    pop rax\n");
+        fprintf(fp, "    cmp rax, 0\n");
+        label1 = new_label();
+        fprintf(fp, "    je .L%d\n", label1);
         compile_node(fp, np->u.link.n2);
+        label2 = new_label();
+        fprintf(fp, "    jmp .L%d\n", label2);
         if (np->u.link.n3) {
-            fprintf(fp, ";else\n");
+            fprintf(fp, ".L%d:\n", label1);
             compile_node(fp, np->u.link.n3);
         }
+        fprintf(fp, ".L%d:\n", label2);
         break;
     case NK_WHILE:
-        fprintf(fp, ";while (\n");
+        fprintf(fp, "; %s(%d) WHILE\n", np->pos.filename, np->pos.line);
+        label1 = new_label();
+        fprintf(fp, ".L%d:\n", label1);
         compile_node(fp, np->u.link.n1);
-        fprintf(fp, ";)\n");
+        fprintf(fp, "    pop rax\n");
+        fprintf(fp, "    cmp rax, 0\n");
+        label2 = new_label();
+        fprintf(fp, "    je .L%d\n", label2);
         compile_node(fp, np->u.link.n2);
+        fprintf(fp, "    jmp .L%d\n", label1);
+        fprintf(fp, ".L%d:\n", label2);
         break;
     case NK_FOR:
-        fprintf(fp, ";for (\n");
+        fprintf(fp, "; %s(%d) FOR\n", np->pos.filename, np->pos.line);
         compile_node(fp, np->u.link.n1);
-        fprintf(fp, ";\n");
+        label1 = new_label();
+        fprintf(fp, ".L%d:\n", label1);
         compile_node(fp, np->u.link.n2);
-        fprintf(fp, ";\n");
-        compile_node(fp, np->u.link.n3);
-        fprintf(fp, ";)\n");
+        fprintf(fp, "    pop rax\n");
+        fprintf(fp, "    cmp rax, 0\n");
+        label2 = new_label();
+        fprintf(fp, "    je .L%d\n", label2);
         compile_node(fp, np->u.link.n4);
+        compile_node(fp, np->u.link.n3);
+        fprintf(fp, "    jmp .L%d\n", label1);
+        fprintf(fp, ".L%d:\n", label2);
         break;
     case NK_CONTINUE:
-        fprintf(fp, ";continue;\n");
+        fprintf(fp, "; %s(%d) CONTINUE\n", np->pos.filename, np->pos.line);
+        /*TODO*/
         break;
     case NK_BREAK:
-        fprintf(fp, ";break;\n");
+        fprintf(fp, "; %s(%d) BREAK\n", np->pos.filename, np->pos.line);
+        /*TODO*/
         break;
     case NK_RETURN:
-    /*
-        fprintf(fp, ";return\n");
-    */
+        fprintf(fp, "; %s(%d) RETURN\n", np->pos.filename, np->pos.line);
         if (np->u.link.n1) {
             compile_node(fp, np->u.link.n1);
             fprintf(fp, "    pop rax\n");
@@ -79,6 +105,8 @@ bool compile_node(FILE *fp, const NODE *np)
         }
         break;
     case NK_EXPR:
+        fprintf(fp, "; %s(%d) EXPR ", np->pos.filename, np->pos.line);
+        fprint_node(fp, np);
         compile_node(fp, np->u.link.n1);
         break;
     case NK_ADD:

@@ -25,28 +25,38 @@ int scan_file(const char *filename)
 static void show_help(void)
 {
     printf("test_scanner\n");
-    printf("usage: test_scanner [-h][-v N] filename\n");
+    printf("usage: test_scanner [-h][-dX] filename\n");
     printf("option\n");
-    printf("  -h       help\n");
-    printf("  -v N     set verbose level N\n");
+    printf("  -h   help\n");
+    printf("  -dl  set scanner debug\n");
 }
 
 static int parse_command_line(int argc, char *argv[])
 {
-    int i, n = 0;
+    struct {
+        char option;
+        char *debug;
+    } options[] = {
+        { 'l', "scanner" },
+        { 'p', "parser" },
+        { 's', "symbol" },
+    };
+    const int N_OPTIONS = sizeof (options) / sizeof (options[1]);
+    int i, j, n = 0;
     int n_file = 0;
 
     for (i = 1; i < argc; i++) {
         if (argv[i][0] == '-') {
             switch (argv[i][1]) {
             case 'v':
-                if (argv[i][2] != 0)
-                    set_verbose_level(atoi(&argv[i][2]));
-                else if (++i < argc)
-                    set_verbose_level(atoi(argv[i]));
-                else
-                    goto done;
-                break;
+                for (j = 0; j < N_OPTIONS; j++) {
+                    if (options[j].option == argv[i][2]) {
+                        set_debug(options[j].debug);
+                        goto next;
+                    }
+                }
+                show_help();
+                return 1;
             default:
                 goto done;
             }
@@ -54,11 +64,12 @@ static int parse_command_line(int argc, char *argv[])
             n += scan_file(argv[i]);
             n_file++;
         }
+next: ;
     }
 done:
     if (n_file == 0) {
         show_help();
-        return 0;
+        return 1;
     }
     return n;
 }

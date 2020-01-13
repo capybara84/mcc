@@ -118,10 +118,9 @@ static int next_char(SCANNER *scan)
         scan->pos.line++;
     scan->ch = scan->source[scan->current++];
 
-/*
-    printf("%s(%d):next_char: '%c'\n",
-            scan->pos.filename, scan->pos.line, scan->ch);
-*/
+    if (is_debug("scanner"))
+        printf("%s(%d):next_char: '%c'\n",
+                scan->pos.filename, scan->pos.line, scan->ch);
 
     return scan->ch;
 }

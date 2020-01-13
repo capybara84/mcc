@@ -123,7 +123,7 @@ void fprint_node(FILE *fp, const NODE *np)
         fprint_node(fp, np->u.comp.right);
         break;
     case NK_COMPOUND:
-        if (is_verbose_level(2))
+        if (is_debug("node"))
             fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprintf(fp, "{\n");
         if (np->u.comp.symtab) {
@@ -134,7 +134,7 @@ void fprint_node(FILE *fp, const NODE *np)
         fprintf(fp, "}\n");
         break;
     case NK_IF:
-        if (is_verbose_level(2))
+        if (is_debug("node"))
             fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprintf(fp, "if (");
         fprint_node(fp, np->u.link.n1);
@@ -147,7 +147,7 @@ void fprint_node(FILE *fp, const NODE *np)
         }
         break;
     case NK_WHILE:
-        if (is_verbose_level(2))
+        if (is_debug("node"))
             fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprintf(fp, "while (");
         fprint_node(fp, np->u.link.n1);
@@ -155,7 +155,7 @@ void fprint_node(FILE *fp, const NODE *np)
         fprint_node(fp, np->u.link.n2);
         break;
     case NK_FOR:
-        if (is_verbose_level(2))
+        if (is_debug("node"))
             fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprintf(fp, "for (");
         fprint_node(fp, np->u.link.n1);
@@ -167,34 +167,34 @@ void fprint_node(FILE *fp, const NODE *np)
         fprint_node(fp, np->u.link.n4);
         break;
     case NK_CONTINUE:
-        if (is_verbose_level(2))
+        if (is_debug("node"))
             fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprintf(fp, "continue;\n");
         break;
     case NK_BREAK:
-        if (is_verbose_level(2))
+        if (is_debug("node"))
             fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprintf(fp, "break;\n");
         break;
     case NK_RETURN:
-        if (is_verbose_level(2))
+        if (is_debug("node"))
             fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprintf(fp, "return ");
         if (np->u.link.n1)
             fprint_node(fp, np->u.link.n1);
         fprintf(fp, ";\n");
-        if (is_verbose_level(1)) {
+        if (is_debug("node")) {
             fprintf(fp, " : ");
             fprint_type(fp, np->type);
             fprintf(fp, "\n");
         }
         break;
     case NK_EXPR:
-        if (is_verbose_level(2))
+        if (is_debug("node"))
             fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
         fprint_node(fp, np->u.link.n1);
         fprintf(fp, ";\n");
-        if (is_verbose_level(1)) {
+        if (is_debug("node")) {
             fprintf(fp, " : ");
             fprint_type(fp, np->type);
             fprintf(fp, "\n");
@@ -218,7 +218,7 @@ void fprint_node(FILE *fp, const NODE *np)
         fprintf(fp, " %s ", node_kind_to_str(np->kind));
         fprint_node(fp, np->u.link.n2);
         fprintf(fp, ")");
-        if (is_verbose_level(1)) {
+        if (is_debug("node")) {
             fprintf(fp, " : ");
             fprint_type(fp, np->type);
             fprintf(fp, "\n");
@@ -231,7 +231,7 @@ void fprint_node(FILE *fp, const NODE *np)
         fprintf(fp, "(%s", node_kind_to_str(np->kind));
         fprint_node(fp, np->u.link.n1);
         fprintf(fp, ")");
-        if (is_verbose_level(1)) {
+        if (is_debug("node")) {
             fprintf(fp, " : ");
             fprint_type(fp, np->type);
             fprintf(fp, "\n");
@@ -240,7 +240,7 @@ void fprint_node(FILE *fp, const NODE *np)
     case NK_ID:
         assert(np->u.sym);
         fprintf(fp, "%s", np->u.sym->id);
-        if (is_verbose_level(1)) {
+        if (is_debug("node")) {
             fprintf(fp, " : ");
             fprint_type(fp, np->type);
             fprintf(fp, "\n");
@@ -248,7 +248,7 @@ void fprint_node(FILE *fp, const NODE *np)
         break;
     case NK_INT_LIT:
         fprintf(fp, "%d", np->u.num);
-        if (is_verbose_level(1)) {
+        if (is_debug("node")) {
             fprintf(fp, " : ");
             fprint_type(fp, np->type);
             fprintf(fp, "\n");
@@ -259,7 +259,7 @@ void fprint_node(FILE *fp, const NODE *np)
         fprintf(fp, "(");
         fprint_node(fp, np->u.link.n2);
         fprintf(fp, ")");
-        if (is_verbose_level(1)) {
+        if (is_debug("node")) {
             fprintf(fp, " : ");
             fprint_type(fp, np->type);
             fprintf(fp, "\n");

@@ -10,12 +10,14 @@
 #else
 static int s_indent = 0;
 # define ENTER(fn)  \
-        if (is_verbose_level(3)) printf("%*sENTER %s\n", s_indent++, "", (fn))
+        if (is_debug("parser_scope")) \
+            printf("%*sENTER %s\n", s_indent++, "", (fn))
 # define LEAVE(fn)  \
-        if (is_verbose_level(3)) printf("%*sLEAVE %s\n", --s_indent, "", (fn))
+        if (is_debug("parser_scope")) \
+            printf("%*sLEAVE %s\n", --s_indent, "", (fn))
 # define TRACE(fn, s)  \
-        if (is_verbose_level(3)) printf("%*sTRACE %s: %s\n", s_indent, "", \
-                                            (fn), (s))
+        if (is_debug("parser_scope")) \
+            printf("%*sTRACE %s: %s\n", s_indent, "", (fn), (s))
 #endif
 
 #ifdef NDEBUG
@@ -24,7 +26,7 @@ static int s_indent = 0;
 static TOKEN next(PARSER *pars)
 {
     pars->token = next_token(pars->scan);
-    if (is_verbose_level(2)) {
+    if (is_debug("parser")) {
         printf("%s(%d): %s\n",
             pars->scan->pos.filename, pars->scan->pos.line,
             scan_token_to_string(pars->scan, pars->token));
@@ -218,7 +220,7 @@ static NODE *parse_primary_expression(PARSER *pars)
             }
             np = new_node_sym(NK_ID, get_pos(pars), sym);
             next(pars);
-            if (is_verbose_level(1)) {
+            if (is_debug("parser")) {
                 printf("sym:%s:", id);
                 print_type(sym->type);
                 printf("\n");
@@ -392,7 +394,7 @@ static TYPE *type_check_bin(PARSER *pars, NODE_KIND kind, TYPE *lhs, TYPE *rhs)
     default: assert(0);
     }
 
-    if (is_verbose_level(1)) {
+    if (is_debug("parser")) {
         printf("lhs:"); print_type(lhs); printf("\n");
         printf("rhs:"); print_type(rhs); printf("\n");
     }
@@ -1023,7 +1025,7 @@ static void parse_declaration(PARSER *pars, int *var_num)
         parse_declarator(pars, &ntyp, &id);
 
 
-        if (is_verbose_level(1)) {
+        if (is_debug("parser")) {
             printf("local id:%s %d %s type:",
                     id, *var_num, get_storage_class_string(sc));
             print_type(ntyp);
@@ -1117,7 +1119,7 @@ static bool parse_external_delaration(PARSER *pars)
         var_num = -1;
         for (p = param_list; p != NULL; p = p->next) {
             new_symbol(SK_VAR, SC_DEFAULT, p->id, p->type, var_num--);
-            if (is_verbose_level(1)) {
+            if (is_debug("parser")) {
                 printf("param id:%s type:", p->id);
                 print_type(p->type);
                 printf("\n");

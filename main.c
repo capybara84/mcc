@@ -32,7 +32,7 @@ static int compile_file(const char *filename)
     result = parse(pars) ? 0 : 1;
     close_parser(pars);
     
-    if (is_verbose_level(1))
+    if (is_debug("symbol"))
         print_global_symtab();
 
     if (result == 0) {
@@ -52,28 +52,40 @@ static int compile_file(const char *filename)
 static void show_help(void)
 {
     printf("mcc - mini c compiler v" VERSION "\n");
-    printf("usage: mcc [-h][-v N] filename...\n");
+    printf("usage: mcc [-h][-dX] filename...\n");
     printf("option\n");
-    printf("  -h       help\n");
-    printf("  -v N     set verbose level N\n");
+    printf("  -h   help\n");
+    printf("  -dl  set scanner debug\n");
+    printf("  -dp  set parser debug\n");
+    printf("  -ds  set symbol debug\n");
 }
 
 static int parse_command_line(int argc, char *argv[])
 {
-    int i, n = 0;
+    struct {
+        char option;
+        char *debug;
+    } options[] = {
+        { 'l', "scanner" },
+        { 'p', "parser" },
+        { 's', "symbol" },
+    };
+    const int N_OPTIONS = sizeof (options) / sizeof (options[1]);
+    int i, j, n = 0;
     int n_file = 0;
 
     for (i = 1; i < argc; i++) {
         if (argv[i][0] == '-') {
             switch (argv[i][1]) {
-            case 'v':
-                if (argv[i][2] != 0)
-                    set_verbose_level(atoi(&argv[i][2]));
-                else if (++i < argc)
-                    set_verbose_level(atoi(argv[i]));
-                else
-                    goto done;
-                break;
+            case 'd':
+                for (j = 0; j < N_OPTIONS; j++) {
+                    if (options[j].option == argv[i][2]) {
+                        set_debug(options[j].debug);
+                        goto next;
+                    }
+                }
+                show_help();
+                return 1;
             default:
                 goto done;
             }
@@ -81,11 +93,12 @@ static int parse_command_line(int argc, char *argv[])
             n += compile_file(argv[i]);
             n_file++;
         }
+next: ;
     }
 done:
     if (n_file == 0) {
         show_help();
-        return 0;
+        return 1;
     }
     return n;
 }

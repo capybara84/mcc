@@ -15,8 +15,8 @@ typedef int bool;
 
 extern jmp_buf g_error_jmp_buf;
 
-bool is_verbose_level(int n);
-void set_verbose_level(int n);
+bool is_debug(const char *s);
+void set_debug(const char *s);
 void *alloc(size_t size);
 
 typedef struct {

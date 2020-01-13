@@ -1,18 +1,32 @@
+#include <string.h>
 #include "mcc.h"
 
 jmp_buf g_error_jmp_buf;
 
-static int s_verbose_level = 0;
+static struct debug {
+    struct debug *next;
+    const char *name;
+} *s_debug = NULL;
 
-bool is_verbose_level(int n)
+bool is_debug(const char *s)
 {
-    return s_verbose_level >= n;
+    struct debug *d;
+    for (d = s_debug; d != NULL; d = d->next)
+        if (strcmp(d->name, s) == 0)
+            return true;
+    return false;
 }
 
-void set_verbose_level(int n)
+void set_debug(const char *s)
 {
-    s_verbose_level = n;
+    if (!is_debug(s)) {
+        struct debug *d = (struct debug*) alloc(sizeof (struct debug));
+        d->name = s;
+        d->next = s_debug;
+        s_debug = d;
+    }
 }
+
 
 void *alloc(size_t size)
 {

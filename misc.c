@@ -24,26 +24,26 @@ void *alloc(size_t size)
     return p;
 }
 
-void vwarning(const char *filename, int line, const char *s, va_list ap)
+void vwarning(const POS *pos, const char *s, va_list ap)
 {
-    fprintf(stdout, "%s(%d):warning:", filename, line);
+    fprintf(stdout, "%s(%d):warning:", pos->filename, pos->line);
     vfprintf(stdout, s, ap);
     fprintf(stdout, "\n");
 }
 
-void verror(const char *filename, int line, const char *s, va_list ap)
+void verror(const POS *pos, const char *s, va_list ap)
 {
-    fprintf(stdout, "%s(%d):error:", filename, line);
+    fprintf(stdout, "%s(%d):error:", pos->filename, pos->line);
     vfprintf(stdout, s, ap);
     fprintf(stdout, "\n");
     longjmp(g_error_jmp_buf, 1);
 }
 
-void error(const char *filename, int line, const char *s, ...)
+void error(const POS *pos, const char *s, ...)
 {
     va_list ap;
     va_start(ap, s);
-    verror(filename, line, s, ap);
+    verror(pos, s, ap);
     va_end(ap);
 }
 

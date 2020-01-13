@@ -19,9 +19,14 @@ bool is_verbose_level(int n);
 void set_verbose_level(int n);
 void *alloc(size_t size);
 
-void vwarning(const char *filename, int line, const char *s, va_list arg);
-void verror(const char *filename, int line, const char *s, va_list arg);
-void error(const char *filename, int line, const char *s, ...);
+typedef struct {
+    const char *filename;
+    int line;
+} POS;
+
+void vwarning(const POS *pos, const char *s, va_list arg);
+void verror(const POS *pos, const char *s, va_list arg);
+void error(const POS *pos, const char *s, ...);
 
 typedef enum {
     T_UNKNOWN, T_VOID, T_NULL, T_INT, T_POINTER, T_FUNC
@@ -65,6 +70,7 @@ bool type_can_logical(const TYPE *lhs, const TYPE *rhs);
 bool type_can_assign(const TYPE *lhs, const TYPE *rhs);
 bool type_warn_assign(const TYPE *lhs, const TYPE *rhs);
 PARAM *link_param(PARAM *top, TYPE *typ, char *id);
+void fprint_type(FILE *fp, const TYPE *typ);
 void print_type(const TYPE *typ);
 
 
@@ -113,9 +119,12 @@ void term_symtab(void);
 
 const char *get_storage_class_string(STORAGE_CLASS sc);
 void print_symbol(const SYMBOL *sym);
+void fprint_symtab_1(FILE *fp, const SYMTAB *tab);
 void print_symtab_1(const SYMTAB *tab);
 void print_symtab(const SYMTAB *tab);
 void print_global_symtab(void);
+
+bool compile_all(FILE *fp);
 
 typedef enum {
     TK_EOF, TK_ID, TK_INT_LIT,
@@ -129,10 +138,9 @@ typedef enum {
 typedef struct {
     const char *source;
     int size;
-    int pos;
+    int current;
     int ch;
-    int line;
-    const char *filename;
+    POS pos;
     int num;
     char *id;
 } SCANNER;
@@ -159,8 +167,8 @@ typedef enum {
 
 struct node {
     NODE_KIND kind;
+    POS pos;
     TYPE *type;
-    SYMTAB *symtab; /*TODO move inside union */
     union {
         struct {
             NODE *n1;
@@ -168,24 +176,31 @@ struct node {
             NODE *n3;
             NODE *n4;
         } link;
+        struct {
+            NODE *left;
+            NODE *right;
+            SYMTAB *symtab;
+        } comp;
         SYMBOL *sym;
         int num;
     } u;
 };
 
-NODE *new_node(NODE_KIND kind, TYPE *typ);
-NODE *new_node1(NODE_KIND kind, TYPE *typ, NODE *n1);
-NODE *new_node2(NODE_KIND kind, TYPE *typ, NODE *n1, NODE *n2);
-NODE *new_node3(NODE_KIND kind, TYPE *typ, NODE *n1, NODE *n2, NODE *n3);
-NODE *new_node4(NODE_KIND kind, TYPE *typ,
+NODE *new_node(NODE_KIND kind, const POS* pos, TYPE *typ);
+NODE *new_node1(NODE_KIND kind, const POS *pos, TYPE *typ, NODE *n1);
+NODE *new_node2(NODE_KIND kind, const POS *pos, TYPE *typ,
+                NODE *n1, NODE *n2);
+NODE *new_node3(NODE_KIND kind, const POS *pos, TYPE *typ,
+                NODE *n1, NODE *n2, NODE *n3);
+NODE *new_node4(NODE_KIND kind, const POS *pos, TYPE *typ,
                     NODE *n1, NODE *n2, NODE *n3, NODE *n4);
-NODE *link_node(NODE_KIND kind, NODE *node, NODE *top);
-NODE *new_node_sym(NODE_KIND kind, SYMBOL *sym);
-NODE *new_node_int(NODE_KIND kind, int num);
+NODE *link_node(NODE_KIND kind, const POS *pos, NODE *node, NODE *top);
+NODE *new_node_sym(NODE_KIND kind, const POS *pos, SYMBOL *sym);
+NODE *new_node_int(NODE_KIND kind, const POS *pos, int num);
 const char *node_kind_to_str(NODE_KIND kind);
 bool node_can_take_addr(const NODE *np);
-
-void print_node(NODE *np);
+void fprint_node(FILE *fp, const NODE *np);
+void print_node(const NODE *np);
 
 typedef struct {
     SCANNER *scan;
@@ -197,6 +212,9 @@ PARSER *open_parser(const char *filename);
 bool close_parser(PARSER *pars);
 bool parse(PARSER *pars);
 
-bool compile(NODE *np);
+void gen_header(FILE *fp);
+bool compile_node(FILE *fp, const NODE *np);
+bool compile_symbol(FILE *fp, const SYMBOL *sym);
+
 
 #endif

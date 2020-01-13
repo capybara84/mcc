@@ -191,43 +191,47 @@ PARAM *link_param(PARAM *top, TYPE *typ, char *id)
 }
 
 
-void print_type(const TYPE *typ)
+void fprint_type(FILE *fp, const TYPE *typ)
 {
     PARAM *p;
     if (typ == NULL) {
     } else {
         switch (typ->kind) {
         case T_UNKNOWN:
-            printf("UNKNOWN");
+            fprintf(fp, "UNKNOWN");
             break;
         case T_VOID:
-            printf("void");
+            fprintf(fp, "void");
             break;
         case T_NULL:
-            printf("null");
+            fprintf(fp, "null");
             break;
         case T_INT:
-            printf("int");
+            fprintf(fp, "int");
             break;
         case T_POINTER:
-            printf("POINTER to ");
-            print_type(typ->type);
+            fprintf(fp, "POINTER to ");
+            fprint_type(fp, typ->type);
             break;
         case T_FUNC:
-            printf("FUNC <");
-            print_type(typ->type);
-            printf("> (");
+            fprintf(fp, "FUNC <");
+            fprint_type(fp, typ->type);
+            fprintf(fp, "> (");
             for (p = typ->param; p != NULL; p = p->next) {
-                print_type(p->type);
+                fprint_type(fp, p->type);
                 if (p->next != NULL)
-                    printf(", ");
+                    fprintf(fp, ", ");
             }
-            printf(")");
+            fprintf(fp, ")");
             break;
         }
     }
 }
 
+void print_type(const TYPE *typ)
+{
+    fprint_type(stdout, typ);
+}
 
 SYMBOL *
 new_symbol(SYMBOL_KIND kind, STORAGE_CLASS sc, const char *id,
@@ -348,29 +352,39 @@ static const char *get_kind_string(SYMBOL_KIND kind)
     return NULL;
 }
 
-void print_symtab_1(const SYMTAB *tab)
+void fprint_symbol(FILE *fp, const SYMBOL *sym)
 {
-    const SYMBOL *sym;
-    if (tab == NULL)
-        return;
-    for (sym = tab->sym; sym != NULL; sym = sym->next) {
-        print_symbol(sym);
+    fprintf(fp, "SYM %s %s(%d) %s:", sym->id, get_kind_string(sym->kind),
+        sym->var_num, get_storage_class_string(sym->sclass));
+    fprint_type(fp, sym->type);
+    fprintf(fp, "\n");
+    if (sym->kind == SK_FUNC && sym->has_body) {
+        fprintf(fp, "local tab\n");
+        fprint_symtab_1(fp, sym->tab);
+        fprintf(fp, "{\n");
+        fprint_node(fp, sym->body_node);
+        fprintf(fp, "}\n");
     }
 }
 
 void print_symbol(const SYMBOL *sym)
 {
-    printf("SYM %s %s(%d) %s:", sym->id, get_kind_string(sym->kind),
-        sym->var_num, get_storage_class_string(sym->sclass));
-    print_type(sym->type);
-    printf("\n");
-    if (sym->kind == SK_FUNC && sym->has_body) {
-        printf("local tab\n");
-        print_symtab_1(sym->tab);
-        printf("{\n");
-        print_node(sym->body_node);
-        printf("}\n");
+    fprint_symbol(stdout, sym);
+}
+
+void fprint_symtab_1(FILE *fp, const SYMTAB *tab)
+{
+    const SYMBOL *sym;
+    if (tab == NULL)
+        return;
+    for (sym = tab->sym; sym != NULL; sym = sym->next) {
+        fprint_symbol(fp, sym);
     }
+}
+
+void print_symtab_1(const SYMTAB *tab)
+{
+    fprint_symtab_1(stdout, tab);
 }
 
 void print_symtab(const SYMTAB *tab)
@@ -385,3 +399,25 @@ void print_global_symtab(void)
     print_symtab(global_table);
 }
 
+
+bool compile_symtab(FILE *fp, const SYMTAB *tab)
+{
+    const SYMBOL *sym;
+    if (tab == NULL)
+        return true;
+    for (sym = tab->sym; sym != NULL; sym = sym->next) {
+        if (sym->kind == SK_VAR && !compile_symbol(fp, sym))
+            return false;
+    }
+    for (sym = tab->sym; sym != NULL; sym = sym->next) {
+        if (sym->kind == SK_FUNC && !compile_symbol(fp, sym))
+            return false;
+    }
+    return true;
+}
+
+bool compile_all(FILE *fp)
+{
+    gen_header(fp);
+    return compile_symtab(fp, global_table);
+}

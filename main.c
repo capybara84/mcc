@@ -1,7 +1,22 @@
+#include <string.h>
 #include "mcc.h"
+
+#define MAX_PATH    256
+
+static void change_filename_ext(char *name, const char *orig, const char *ext)
+{
+    char *p;
+    strcpy(name, orig);
+    p = strchr(name, '.');
+    if (p)
+        strcpy(p, ext);
+    else
+        strcat(p, ext);
+}
 
 static int compile_file(const char *filename)
 {
+    char asm_name[MAX_PATH+1];
     PARSER *pars;
     int result;
 
@@ -17,7 +32,20 @@ static int compile_file(const char *filename)
     result = parse(pars) ? 0 : 1;
     close_parser(pars);
     
-    print_global_symtab();
+    if (is_verbose_level(1))
+        print_global_symtab();
+
+    if (result == 0) {
+        FILE *fp;
+        change_filename_ext(asm_name, filename, ".s");
+        fp = fopen(asm_name, "w");
+        if (fp == NULL) {
+            fprintf(stderr, "can't open '%s'\n", asm_name);
+            return 1;
+        }
+        result = compile_all(fp) ? 0 : 1;
+        fclose(fp);
+    }
     return result;
 }
 

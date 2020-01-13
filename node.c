@@ -109,79 +109,75 @@ const char *node_kind_to_str(NODE_KIND kind)
     return "";
 }
 
-void fprint_node(FILE *fp, const NODE *np)
+void fprint_node(FILE *fp, int indent, const NODE *np)
 {
     if (np == NULL) {
-/*
-        fprintf(fp, "<NULL>");
-*/
         return;
     }
     switch (np->kind) {
     case NK_LINK:
-        fprint_node(fp, np->u.comp.left);
-        fprint_node(fp, np->u.comp.right);
+        fprint_node(fp, indent, np->u.comp.left);
+        fprint_node(fp, indent, np->u.comp.right);
         break;
     case NK_COMPOUND:
         if (is_debug("node"))
-            fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
-        fprintf(fp, "{\n");
+            fprintf(fp, "%*s%s(%d):", indent, "",
+                    np->pos.filename, np->pos.line);
+        fprintf(fp, "%*s{\n", indent, "");
         if (np->u.comp.symtab) {
-            fprintf(fp, "local symtab\n");
-            fprint_symtab_1(fp, np->u.comp.symtab);
+            fprint_symtab_1(fp, indent+2, np->u.comp.symtab);
         }
-        fprint_node(fp, np->u.comp.left);
-        fprintf(fp, "}\n");
+        fprint_node(fp, indent+2, np->u.comp.left);
+        fprintf(fp, "%*s}\n", indent, "");
         break;
     case NK_IF:
         if (is_debug("node"))
             fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
-        fprintf(fp, "if (");
-        fprint_node(fp, np->u.link.n1);
+        fprintf(fp, "%*sif (", indent, "");
+        fprint_node(fp, indent, np->u.link.n1);
         fprintf(fp, ")\n");
-        fprint_node(fp, np->u.link.n2);
-        fprintf(fp, "\n");
+        fprint_node(fp, indent+2, np->u.link.n2);
         if (np->u.link.n3) {
-            fprintf(fp, "else\n");
-            fprint_node(fp, np->u.link.n3);
+            fprintf(fp, "%*selse\n", indent, "");
+            fprint_node(fp, indent+2, np->u.link.n3);
         }
         break;
     case NK_WHILE:
         if (is_debug("node"))
             fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
-        fprintf(fp, "while (");
-        fprint_node(fp, np->u.link.n1);
+        fprintf(fp, "%*swhile (", indent, "");
+        fprint_node(fp, indent, np->u.link.n1);
         fprintf(fp, ")\n");
-        fprint_node(fp, np->u.link.n2);
+        fprint_node(fp, indent+2, np->u.link.n2);
         break;
     case NK_FOR:
         if (is_debug("node"))
             fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
-        fprintf(fp, "for (");
-        fprint_node(fp, np->u.link.n1);
+        fprintf(fp, "%*sfor (", indent, "");
+        fprint_node(fp, indent, np->u.link.n1);
         fprintf(fp, "; ");
-        fprint_node(fp, np->u.link.n2);
+        fprint_node(fp, indent, np->u.link.n2);
         fprintf(fp, "; ");
-        fprint_node(fp, np->u.link.n3);
+        fprint_node(fp, indent, np->u.link.n3);
         fprintf(fp, ")\n");
-        fprint_node(fp, np->u.link.n4);
+        fprint_node(fp, indent+2, np->u.link.n4);
         break;
     case NK_CONTINUE:
         if (is_debug("node"))
             fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
-        fprintf(fp, "continue;\n");
+        fprintf(fp, "%*scontinue;\n", indent, "");
         break;
     case NK_BREAK:
         if (is_debug("node"))
             fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
-        fprintf(fp, "break;\n");
+        fprintf(fp, "%*sbreak;\n", indent, "");
         break;
     case NK_RETURN:
         if (is_debug("node"))
             fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
-        fprintf(fp, "return ");
+        fprintf(fp, "%*sreturn ", indent, "");
         if (np->u.link.n1)
-            fprint_node(fp, np->u.link.n1);
+            fprint_node(fp, indent, np->u.link.n1);
         fprintf(fp, ";\n");
         if (is_debug("node")) {
             fprintf(fp, " : ");
@@ -192,7 +188,8 @@ void fprint_node(FILE *fp, const NODE *np)
     case NK_EXPR:
         if (is_debug("node"))
             fprintf(fp, "%s(%d):", np->pos.filename, np->pos.line);
-        fprint_node(fp, np->u.link.n1);
+        fprintf(fp, "%*s", indent, "");
+        fprint_node(fp, indent, np->u.link.n1);
         fprintf(fp, ";\n");
         if (is_debug("node")) {
             fprintf(fp, " : ");
@@ -214,9 +211,9 @@ void fprint_node(FILE *fp, const NODE *np)
     case NK_MUL:
     case NK_DIV:
         fprintf(fp, "(");
-        fprint_node(fp, np->u.link.n1);
+        fprint_node(fp, 0, np->u.link.n1);
         fprintf(fp, " %s ", node_kind_to_str(np->kind));
-        fprint_node(fp, np->u.link.n2);
+        fprint_node(fp, 0, np->u.link.n2);
         fprintf(fp, ")");
         if (is_debug("node")) {
             fprintf(fp, " : ");
@@ -229,7 +226,7 @@ void fprint_node(FILE *fp, const NODE *np)
     case NK_MINUS:
     case NK_NOT:
         fprintf(fp, "(%s", node_kind_to_str(np->kind));
-        fprint_node(fp, np->u.link.n1);
+        fprint_node(fp, 0, np->u.link.n1);
         fprintf(fp, ")");
         if (is_debug("node")) {
             fprintf(fp, " : ");
@@ -255,9 +252,9 @@ void fprint_node(FILE *fp, const NODE *np)
         }
         break;
     case NK_CALL:
-        fprint_node(fp, np->u.link.n1);
+        fprint_node(fp, 0, np->u.link.n1);
         fprintf(fp, "(");
-        fprint_node(fp, np->u.link.n2);
+        fprint_node(fp, 0, np->u.link.n2);
         fprintf(fp, ")");
         if (is_debug("node")) {
             fprintf(fp, " : ");
@@ -266,17 +263,17 @@ void fprint_node(FILE *fp, const NODE *np)
         }
         break;
     case NK_ARG:
-        fprint_node(fp, np->u.link.n1);
+        fprint_node(fp, 0, np->u.link.n1);
         if (np->u.link.n2) {
             fprintf(fp, ", ");
-            fprint_node(fp, np->u.link.n2);
+            fprint_node(fp, 0, np->u.link.n2);
         }
         break;
     }
 }
 
 
-void print_node(const NODE *np)
+void print_node(int indent, const NODE *np)
 {
-    fprint_node(stdout, np);
+    fprint_node(stdout, indent, np);
 }

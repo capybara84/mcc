@@ -118,10 +118,7 @@ bool init_symtab(void);
 void term_symtab(void);
 
 const char *get_storage_class_string(STORAGE_CLASS sc);
-void print_symbol(const SYMBOL *sym);
-void fprint_symtab_1(FILE *fp, const SYMTAB *tab);
-void print_symtab_1(const SYMTAB *tab);
-void print_symtab(const SYMTAB *tab);
+void fprint_symtab_1(FILE *fp, int indent, const SYMTAB *tab);
 void print_global_symtab(void);
 
 bool compile_all(FILE *fp);
@@ -199,8 +196,8 @@ NODE *new_node_sym(NODE_KIND kind, const POS *pos, SYMBOL *sym);
 NODE *new_node_int(NODE_KIND kind, const POS *pos, int num);
 const char *node_kind_to_str(NODE_KIND kind);
 bool node_can_take_addr(const NODE *np);
-void fprint_node(FILE *fp, const NODE *np);
-void print_node(const NODE *np);
+void fprint_node(FILE *fp, int indent, const NODE *np);
+void print_node(int indent, const NODE *np);
 
 typedef struct {
     SCANNER *scan;

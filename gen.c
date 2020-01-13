@@ -106,7 +106,7 @@ bool compile_node(FILE *fp, const NODE *np)
         break;
     case NK_EXPR:
         fprintf(fp, "; %s(%d) EXPR ", np->pos.filename, np->pos.line);
-        fprint_node(fp, np);
+        fprint_node(fp, 0, np);
         compile_node(fp, np->u.link.n1);
         break;
     case NK_ADD:

@@ -1,11 +1,12 @@
-int g;
-int x;
+int test(int a, int b, int c, int d, int e, int f, int g, int h)
+{
+    int x;
+    x = a + b + c + d + e + f + g + h;
+    return x;
+}
 
-int f() {
-    int a, b;
-    a = 123;
-    b = 0;
-    for (a = 0; a < 10; a = a + 1)
-        b = b + a;
-    return b;
+int main()
+{
+    test(1,2,3,4,5,6,7,8);
+    return 0;
 }

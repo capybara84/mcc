@@ -590,7 +590,7 @@ static NODE *parse_expression(PARSER *pars)
     return np;
 }
 
-static void parse_declaration(PARSER *pars, int *var_num);
+static void parse_declaration(PARSER *pars, int *offset);
 static NODE *parse_statement(PARSER *pars);
 
 /*
@@ -599,7 +599,7 @@ compound_statement
 declaration_list
     = declaration {declaration}
 */
-static NODE *parse_compound_statement(PARSER *pars, int var_num)
+static NODE *parse_compound_statement(PARSER *pars, int offset)
 {
     NODE *np = new_node(NK_COMPOUND, get_pos(pars), NULL);
 
@@ -607,7 +607,7 @@ static NODE *parse_compound_statement(PARSER *pars, int var_num)
 
     next(pars); /* skip '{' */
     while (is_declaration(pars))
-        parse_declaration(pars, &var_num);
+        parse_declaration(pars, &offset);
     while (is_statement(pars)) {
         NODE *p;
         POS pos = copy_pos(pars);
@@ -658,7 +658,7 @@ static NODE *parse_statement(PARSER *pars)
     case TK_BEGIN:
         TRACE("parse_statement", "compound");
         tab = enter_scope();
-        np = parse_compound_statement(pars, get_func_var_num() + 1);
+        np = parse_compound_statement(pars, get_func_local_var_size());
         assert(np->kind == NK_COMPOUND);
         np->u.comp.symtab = tab;
         leave_scope();
@@ -1004,7 +1004,7 @@ declaration
 declarator_list
     = declarator {',' declarator}
 */
-static void parse_declaration(PARSER *pars, int *var_num)
+static void parse_declaration(PARSER *pars, int *offset)
 {
     STORAGE_CLASS sc;
     TYPE *typ;
@@ -1027,7 +1027,7 @@ static void parse_declaration(PARSER *pars, int *var_num)
 
         if (is_debug("parser")) {
             printf("local id:%s %d %s type:",
-                    id, *var_num, get_storage_class_string(sc));
+                    id, *offset, get_storage_class_string(sc));
             print_type(ntyp);
             printf("\n");
         }
@@ -1050,8 +1050,11 @@ static void parse_declaration(PARSER *pars, int *var_num)
             }
         }
         if (!already) {
-            int num = *var_num == 0 ? 0 : (*var_num)++;
-            new_symbol(symkind, sc, id, ntyp, num);
+            int num = *offset;
+            VAR_KIND varkind = (symkind == SK_FUNC) ? VK_UNKNOWN : VK_LOCAL;
+            (*offset) += type_size(ntyp);
+            set_func_local_var_size(*offset);
+            new_symbol(symkind, varkind, sc, id, ntyp, num);
         }
 
         if (pars->token != TK_COMMA)
@@ -1101,31 +1104,34 @@ static bool parse_external_delaration(PARSER *pars)
     }
 
     if (pars->token == TK_SEMI) {
-        if (sym == NULL)
-            sym = new_symbol(symkind, sc, id, typ, 0);
+        if (sym == NULL) {
+            VAR_KIND var_kind = (symkind == SK_FUNC) ? VK_UNKNOWN : VK_GLOBAL;
+            sym = new_symbol(symkind, var_kind, sc, id, typ, 0);
+        }
         next(pars);
     } else if (pars->token == TK_BEGIN) {
         NODE *body;
         PARAM *p;
-        int var_num;
+        int offset;
         if (symkind != SK_FUNC)
             parser_error(pars, "invalid function syntax");
         if (sym) {
             if (sym->has_body)
                 parser_error(pars, "'%s' redefinition", id);
         } else
-            sym = new_symbol(SK_FUNC, sc, id, typ, 0);
+            sym = new_symbol(SK_FUNC, VK_UNKNOWN, sc, id, typ, 0);
         sym->tab = enter_function(sym);
-        var_num = -1;
+        offset = 0;
         for (p = param_list; p != NULL; p = p->next) {
-            new_symbol(SK_VAR, SC_DEFAULT, p->id, p->type, var_num--);
+            new_symbol(SK_VAR, VK_PARAM, SC_DEFAULT, p->id, p->type, offset);
+            offset += type_size(p->type);
             if (is_debug("parser")) {
                 printf("param id:%s type:", p->id);
                 print_type(p->type);
                 printf("\n");
             }
         }
-        body = parse_compound_statement(pars, 1);
+        body = parse_compound_statement(pars, 0);
         /*TODO calc local table size */
         sym->has_body = true;
         sym->body_node = body;

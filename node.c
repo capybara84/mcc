@@ -236,7 +236,7 @@ void fprint_node(FILE *fp, int indent, const NODE *np)
         break;
     case NK_ID:
         assert(np->u.sym);
-        fprintf(fp, "%s.(%d)", np->u.sym->id, np->u.sym->var_num);
+        fprintf(fp, "%s", np->u.sym->id);
         if (is_debug("node")) {
             fprintf(fp, " : ");
             fprint_type(fp, np->type);

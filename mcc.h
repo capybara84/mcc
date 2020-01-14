@@ -72,6 +72,7 @@ bool type_warn_assign(const TYPE *lhs, const TYPE *rhs);
 PARAM *link_param(PARAM *top, TYPE *typ, char *id);
 void fprint_type(FILE *fp, const TYPE *typ);
 void print_type(const TYPE *typ);
+int type_size(const TYPE *typ);
 
 
 typedef struct node NODE;
@@ -84,6 +85,9 @@ typedef enum {
     SK_VAR, SK_FUNC,
 } SYMBOL_KIND;
 
+typedef enum {
+    VK_UNKNOWN, VK_GLOBAL, VK_LOCAL, VK_PARAM,
+} VAR_KIND;
 typedef struct symbol SYMBOL;
 typedef struct symtab SYMTAB;
 
@@ -91,12 +95,13 @@ struct symbol {
     SYMBOL *next;
     STORAGE_CLASS sclass;
     SYMBOL_KIND kind;
+    VAR_KIND var_kind;
     const char *id;
     TYPE *type;
     bool has_body;
     NODE *body_node;
     SYMTAB *tab;
-    int var_num;
+    int offset;
 };
 
 struct symtab {
@@ -104,8 +109,8 @@ struct symtab {
     SYMTAB *up;
 };
 
-SYMBOL *new_symbol(SYMBOL_KIND kind, STORAGE_CLASS sc,
-                    const char *id, TYPE *type, int var_num);
+SYMBOL *new_symbol(SYMBOL_KIND kind, VAR_KIND var_kind, STORAGE_CLASS sc,
+                    const char *id, TYPE *type, int offset);
 SYMBOL *lookup_symbol_local(const char *id);
 SYMBOL *lookup_symbol(const char *id);
 SYMTAB *new_symtab(SYMTAB *up);
@@ -113,7 +118,8 @@ SYMTAB *enter_scope(void);
 void leave_scope(void);
 SYMTAB *enter_function(SYMBOL *sym);
 void leave_function(void);
-int get_func_var_num(void);
+int get_func_local_var_size(void);
+void set_func_local_var_size(int size);
 bool init_symtab(void);
 void term_symtab(void);
 

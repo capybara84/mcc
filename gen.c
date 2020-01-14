@@ -20,7 +20,7 @@ void gen_lval(FILE *fp, const NODE *np)
         error(&np->pos, "invalid left value (not variable)");
     assert(np->u.sym);
     fprintf(fp, "    mov rax, rbp\n");
-    fprintf(fp, "    sub rax, %d   ; %s\n", np->u.sym->var_num * 8,
+    fprintf(fp, "    sub rax, %d   ; %s\n", np->u.sym->offset * 8,
                     np->u.sym->id);
     fprintf(fp, "    push rax\n");
 }
@@ -205,7 +205,7 @@ bool compile_node(FILE *fp, const NODE *np)
     case NK_ID:
         assert(np->u.sym);
         if (np->u.sym->kind == SK_VAR) {
-            if (np->u.sym->var_num != 0) {
+            if (np->u.sym->offset != 0) {
                 gen_lval(fp, np);
                 fprintf(fp, "    pop rax\n");
                 fprintf(fp, "    mov rax, [rax]\n");
@@ -254,8 +254,8 @@ bool compile_symbol(FILE *fp, const SYMBOL *sym)
         if (sym->has_body) {
             fprintf(fp, "    push rbp\n");
             fprintf(fp, "    mov rbp, rsp\n");
-            if (sym->var_num > 0)
-                fprintf(fp, "    sub rbp, %d\n", sym->var_num * 8);
+            if (sym->offset > 0)
+                fprintf(fp, "    sub rbp, %d\n", sym->offset * 8);
             if (!compile_node(fp, sym->body_node))
                 return false;
             fprintf(fp, "    mov rsp, rbp\n");

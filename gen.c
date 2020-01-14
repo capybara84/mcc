@@ -19,8 +19,9 @@ void gen_lval(FILE *fp, const NODE *np)
     if (np->kind != NK_ID)
         error(&np->pos, "invalid left value (not variable)");
     assert(np->u.sym);
+    /*TODO*/
     fprintf(fp, "    mov rax, rbp\n");
-    fprintf(fp, "    sub rax, %d   ; %s\n", np->u.sym->offset * 8,
+    fprintf(fp, "    sub rax, %d   ; %s\n", np->u.sym->offset,
                     np->u.sym->id);
     fprintf(fp, "    push rax\n");
 }
@@ -45,6 +46,7 @@ bool compile_node(FILE *fp, const NODE *np)
     case NK_IF:
         fprintf(fp, "; %s(%d) IF\n", np->pos.filename, np->pos.line);
         compile_node(fp, np->u.link.n1);
+        /*TODO*/
         fprintf(fp, "    pop rax\n");
         fprintf(fp, "    cmp rax, 0\n");
         label1 = new_label();
@@ -63,6 +65,7 @@ bool compile_node(FILE *fp, const NODE *np)
         label1 = new_label();
         fprintf(fp, ".L%d:\n", label1);
         compile_node(fp, np->u.link.n1);
+        /*TODO*/
         fprintf(fp, "    pop rax\n");
         fprintf(fp, "    cmp rax, 0\n");
         label2 = new_label();
@@ -77,6 +80,7 @@ bool compile_node(FILE *fp, const NODE *np)
         label1 = new_label();
         fprintf(fp, ".L%d:\n", label1);
         compile_node(fp, np->u.link.n2);
+        /*TODO*/
         fprintf(fp, "    pop rax\n");
         fprintf(fp, "    cmp rax, 0\n");
         label2 = new_label();
@@ -121,6 +125,7 @@ bool compile_node(FILE *fp, const NODE *np)
     case NK_GE:
         compile_node(fp, np->u.link.n1);
         compile_node(fp, np->u.link.n2);
+        /*TODO*/
         fprintf(fp, "    pop rdi\n");
         fprintf(fp, "    pop rax\n");
         switch (np->kind) {
@@ -174,6 +179,7 @@ bool compile_node(FILE *fp, const NODE *np)
     case NK_ASSIGN:
         gen_lval(fp, np->u.link.n1);
         compile_node(fp, np->u.link.n2);
+        /*TODO*/
         fprintf(fp, "    pop rdi\n");
         fprintf(fp, "    pop rax\n");
         fprintf(fp, "    mov [rax], rdi\n");
@@ -255,7 +261,7 @@ bool compile_symbol(FILE *fp, const SYMBOL *sym)
             fprintf(fp, "    push rbp\n");
             fprintf(fp, "    mov rbp, rsp\n");
             if (sym->offset > 0)
-                fprintf(fp, "    sub rbp, %d\n", sym->offset * 8);
+                fprintf(fp, "    sub rbp, %d\n", sym->offset + 8); /*TODO 8?*/
             if (!compile_node(fp, sym->body_node))
                 return false;
             fprintf(fp, "    mov rsp, rbp\n");

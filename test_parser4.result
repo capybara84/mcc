@@ -1,19 +1,30 @@
-SYM test FUNC(3) DEFAULT:FUNC <int> (int, int, int)
+SYM main FUNC UNKNOWN(0) DEFAULT:FUNC <int> ()
   local tab
-  SYM z VAR(3) DEFAULT:int
-  SYM y VAR(2) DEFAULT:int
-  SYM x VAR(1) DEFAULT:int
-  SYM c VAR(-3) DEFAULT:int
-  SYM b VAR(-2) DEFAULT:int
-  SYM a VAR(-1) DEFAULT:int
   {
+    test(1, 2, 3, 4, 5, 6, 7, 8);
+    return 0;
   }
-SYM sub FUNC(0) DEFAULT:FUNC <int> (int, int)
-SYM add FUNC(1) DEFAULT:FUNC <int> (int, int)
+SYM test FUNC UNKNOWN(4) DEFAULT:FUNC <int> (int, int, int, int, int, int, int, int)
   local tab
-  SYM result VAR(1) DEFAULT:int
-  SYM y VAR(-2) DEFAULT:int
-  SYM x VAR(-1) DEFAULT:int
+  SYM x VAR LOCAL(0) DEFAULT:int
+  SYM h VAR PARAM(28) DEFAULT:int
+  SYM g VAR PARAM(24) DEFAULT:int
+  SYM f VAR PARAM(20) DEFAULT:int
+  SYM e VAR PARAM(16) DEFAULT:int
+  SYM d VAR PARAM(12) DEFAULT:int
+  SYM c VAR PARAM(8) DEFAULT:int
+  SYM b VAR PARAM(4) DEFAULT:int
+  SYM a VAR PARAM(0) DEFAULT:int
+  {
+    (x = (((((((a + b) + c) + d) + e) + f) + g) + h));
+    return x;
+  }
+SYM sub FUNC UNKNOWN(0) DEFAULT:FUNC <int> (int, int)
+SYM add FUNC UNKNOWN(4) DEFAULT:FUNC <int> (int, int)
+  local tab
+  SYM result VAR LOCAL(0) DEFAULT:int
+  SYM y VAR PARAM(4) DEFAULT:int
+  SYM x VAR PARAM(0) DEFAULT:int
   {
     (result = (x + y));
     return result;

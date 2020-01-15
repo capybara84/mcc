@@ -13,6 +13,26 @@ void gen_header(FILE *fp)
     fprintf(fp, ".intel_syntax noprefix\n");
 }
 
+const char *var_addr(const SYMBOL *sym)
+{
+    static char buf[128];
+    switch (sym->var_kind) {
+    case VK_GLOBAL:
+        sprintf(buf, "%s", sym->id);
+        break;
+    case VK_LOCAL:
+        sprintf(buf, "[rbp-%d]", sym->offset + 8);
+        break;
+    case VK_PARAM:
+        sprintf(buf, "[rbp+%d]", sym->offset + 16);
+        break;
+    default:
+        buf[0] = '\0';
+        break;
+    }
+    return buf;
+}
+
 void gen_get_var(FILE *fp, const NODE *np)
 {
     SYMBOL *sym;
@@ -20,19 +40,9 @@ void gen_get_var(FILE *fp, const NODE *np)
         error(&np->pos, "not variable");
     sym = np->u.sym;
     assert(sym);
-    switch (sym->var_kind) {
-    case VK_GLOBAL:
-        fprintf(fp, "    mov eax,%s\n", sym->id);
-        break;
-    case VK_LOCAL:
-        fprintf(fp, "    mov eax,[ebp-%d] ; %s\n", sym->offset+4, sym->id);
-        break;
-    case VK_PARAM:
-        fprintf(fp, "    mov eax,[ebp+%d] ; %s\n", sym->offset+20, sym->id);
-        break;
-    default:
+    if (sym->var_kind == VK_UNKNOWN)
         error(&np->pos, "invalid variable");
-    }
+    fprintf(fp, "    mov eax,%s ; %s\n", var_addr(sym), sym->id);
 }
 
 void gen_set_var(FILE *fp, const NODE *np)
@@ -42,19 +52,9 @@ void gen_set_var(FILE *fp, const NODE *np)
         error(&np->pos, "not variable");
     sym = np->u.sym;
     assert(sym);
-    switch (sym->var_kind) {
-    case VK_GLOBAL:
-        fprintf(fp, "    mov %s,eax\n", sym->id);
-        break;
-    case VK_LOCAL:
-        fprintf(fp, "    mov [ebp-%d],eax ; %s\n", sym->offset+4, sym->id);
-        break;
-    case VK_PARAM:
-        fprintf(fp, "    mov [ebp+%d],eax ; %s\n", sym->offset+20, sym->id);
-        break;
-    default:
+    if (sym->var_kind == VK_UNKNOWN)
         error(&np->pos, "invalid variable");
-    }
+    fprintf(fp, "    mov %s,eax ; %s\n", var_addr(sym), sym->id);
 }
 
 bool compile_node(FILE *fp, const NODE *np)
@@ -232,28 +232,24 @@ bool compile_node(FILE *fp, const NODE *np)
         } else {
             fprintf(fp, ";FUNC %s\n", np->u.sym->id);
             /*TODO*/
+            assert(0);
         }
         break;
     case NK_INT_LIT:
         fprintf(fp, "    mov eax,%d\n", np->u.num);
         break;
     case NK_CALL:
-        /*TODO*/
-        /*
-        compile_node(fp, np->u.link.n1);
-        fprintf(fp, "(");
         compile_node(fp, np->u.link.n2);
-        fprintf(fp, ")");
-        */
+        if (np->u.link.n1->kind == NK_ID) {
+            fprintf(fp, "    call %s\n", np->u.link.n1->u.sym->id);
+        } else {
+            /*TODO*/
+        }
         break;
     case NK_ARG:
-        /* TODO
         compile_node(fp, np->u.link.n1);
-        if (np->u.link.n2) {
-            fprintf(fp, ", ");
-            compile_node(fp, np->u.link.n2);
-        }
-        */
+        fprintf(fp, "    push eax\n");
+        compile_node(fp, np->u.link.n2);
         break;
     }
 
@@ -268,10 +264,19 @@ bool compile_symbol(FILE *fp, const SYMBOL *sym)
         if (sym->sclass != SC_EXTERN)
             fprintf(fp, "%s:\n", sym->id);
         if (sym->has_body) {
+            int buf_size;
             fprintf(fp, "    push rbp\n");
             fprintf(fp, "    mov rbp, rsp\n");
-            if (sym->offset > 0)
-                fprintf(fp, "    sub rbp, %d\n", sym->offset + 28);
+            buf_size = calc_arg_size(sym) * 8;
+            fprintf(fp, "    sub rbp, %d\n", sym->offset + buf_size + 8);
+            if (buf_size > 0) {
+                char *reg[] = {
+                    "rdi", "rsi", "rdx", "rcx", "r8", "r9",
+                };
+                int i;
+                for (i = 0; i < 6; i++) /*TODO*/
+                    fprintf(fp, "    mov [rbp-%d],%s\n", (i+1)*8, reg[i]);
+            }
             if (!compile_node(fp, sym->body_node))
                 return false;
             fprintf(fp, "    mov rsp, rbp\n");

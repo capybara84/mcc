@@ -429,6 +429,10 @@ void print_global_symtab(void)
     print_symtab(global_table);
 }
 
+int calc_arg_size(const SYMBOL *sym)
+{
+    return 6;   /*TODO*/
+}
 
 bool compile_symtab(FILE *fp, const SYMTAB *tab)
 {

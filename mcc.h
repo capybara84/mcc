@@ -127,6 +127,8 @@ const char *get_storage_class_string(STORAGE_CLASS sc);
 void fprint_symtab_1(FILE *fp, int indent, const SYMTAB *tab);
 void print_global_symtab(void);
 
+int calc_arg_size(const SYMBOL *sym);
+
 bool compile_all(FILE *fp);
 
 typedef enum {

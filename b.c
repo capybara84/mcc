@@ -1,8 +1,18 @@
 int test(int a, int b, int c, int d, int e, int f, int g, int h)
 {
-    int x;
+/*
+    int x, y, z;
     x = a + b + c + d + e + f + g + h;
-    return x;
+    y = a + b;
+    z = c + d + e;
+    return x + y + z;
+*/
+    return g;
+}
+
+int push(int a, int b, int c)
+{
+    return c;
 }
 
 int main()

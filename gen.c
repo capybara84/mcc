@@ -13,33 +13,48 @@ void gen_header(FILE *fp)
     fprintf(fp, ".intel_syntax noprefix\n");
 }
 
-void gen_lval(FILE *fp, const NODE *np)
-{
-    assert(np->kind == NK_ID);
-    if (np->kind != NK_ID)
-        error(&np->pos, "invalid left value (not variable)");
-    assert(np->u.sym);
-    /*TODO*/
-    fprintf(fp, "    mov rax, rbp\n");
-    fprintf(fp, "    sub rax, %d   ; %s\n", np->u.sym->offset,
-                    np->u.sym->id);
-    fprintf(fp, "    push rax\n");
-}
-
-void gen_left_val(FILE *fp, const NODE *np)
+void gen_get_var(FILE *fp, const NODE *np)
 {
     SYMBOL *sym;
     if (np->kind != NK_ID)
-        error(&np->pos, "invalid left value (not variable)");
+        error(&np->pos, "not variable");
     sym = np->u.sym;
-    assert(sym != NULL);
-    if (sym->var_kind == VK_LOCAL)
-        fprintf(fp, "ebp-%d", sym->offset-8);
-    else if (sym->var_kind == VK_PARAM)
-        fprintf(fp, "ebp+%d", sym->offset-8);
-    else if (sym->var_kind == VK_GLOBAL)
-        fprintf(fp, "%s", sym->id);
-    else error(&np->pos, "variable is not local neither func");
+    assert(sym);
+    switch (sym->var_kind) {
+    case VK_GLOBAL:
+        fprintf(fp, "    mov eax,%s\n", sym->id);
+        break;
+    case VK_LOCAL:
+        fprintf(fp, "    mov eax,[ebp-%d] ; %s\n", sym->offset+4, sym->id);
+        break;
+    case VK_PARAM:
+        fprintf(fp, "    mov eax,[ebp+%d] ; %s\n", sym->offset+20, sym->id);
+        break;
+    default:
+        error(&np->pos, "invalid variable");
+    }
+}
+
+void gen_set_var(FILE *fp, const NODE *np)
+{
+    SYMBOL *sym;
+    if (np->kind != NK_ID)
+        error(&np->pos, "not variable");
+    sym = np->u.sym;
+    assert(sym);
+    switch (sym->var_kind) {
+    case VK_GLOBAL:
+        fprintf(fp, "    mov %s,eax\n", sym->id);
+        break;
+    case VK_LOCAL:
+        fprintf(fp, "    mov [ebp-%d],eax ; %s\n", sym->offset+4, sym->id);
+        break;
+    case VK_PARAM:
+        fprintf(fp, "    mov [ebp+%d],eax ; %s\n", sym->offset+20, sym->id);
+        break;
+    default:
+        error(&np->pos, "invalid variable");
+    }
 }
 
 bool compile_node(FILE *fp, const NODE *np)
@@ -62,7 +77,6 @@ bool compile_node(FILE *fp, const NODE *np)
     case NK_IF:
         fprintf(fp, "; %s(%d) IF\n", np->pos.filename, np->pos.line);
         compile_node(fp, np->u.link.n1);
-        /*fprintf(fp, "    pop rax\n");*/
         fprintf(fp, "    cmp rax, 0\n");
         label1 = new_label();
         fprintf(fp, "    je .L%d\n", label1);
@@ -80,7 +94,6 @@ bool compile_node(FILE *fp, const NODE *np)
         label1 = new_label();
         fprintf(fp, ".L%d:\n", label1);
         compile_node(fp, np->u.link.n1);
-        /*fprintf(fp, "    pop rax\n");*/
         fprintf(fp, "    cmp rax, 0\n");
         label2 = new_label();
         fprintf(fp, "    je .L%d\n", label2);
@@ -94,7 +107,6 @@ bool compile_node(FILE *fp, const NODE *np)
         label1 = new_label();
         fprintf(fp, ".L%d:\n", label1);
         compile_node(fp, np->u.link.n2);
-        /*fprintf(fp, "    pop rax\n");*/
         fprintf(fp, "    cmp rax, 0\n");
         label2 = new_label();
         fprintf(fp, "    je .L%d\n", label2);
@@ -187,18 +199,8 @@ bool compile_node(FILE *fp, const NODE *np)
         }
         break;
     case NK_ASSIGN:
-        /*
-        gen_lval(fp, np->u.link.n1);
         compile_node(fp, np->u.link.n2);
-        fprintf(fp, "    pop rdi\n");
-        fprintf(fp, "    pop rax\n");
-        fprintf(fp, "    mov [rax], rdi\n");
-        fprintf(fp, "    push rdi\n");
-        */
-        compile_node(fp, np->u.link.n2);
-        fprintf(fp, "    mov ");
-        gen_left_val(fp, np->u.link.n1);
-        fprintf(fp, ",eax\n");
+        gen_set_var(fp, np->u.link.n1);
         break;
     case NK_LOR:
         /*TODO*/
@@ -226,16 +228,7 @@ bool compile_node(FILE *fp, const NODE *np)
     case NK_ID:
         assert(np->u.sym);
         if (np->u.sym->kind == SK_VAR) {
-        /*
-            if (np->u.sym->offset != 0) {
-                gen_lval(fp, np);
-                fprintf(fp, "    pop rax\n");
-                fprintf(fp, "    mov rax, [rax]\n");
-                fprintf(fp, "    push rax\n");
-            } else {
-            }
-        */
-            fprintf(fp, "    mov rax,[rbp+?]\n");
+            gen_get_var(fp, np);
         } else {
             fprintf(fp, ";FUNC %s\n", np->u.sym->id);
             /*TODO*/
@@ -278,7 +271,7 @@ bool compile_symbol(FILE *fp, const SYMBOL *sym)
             fprintf(fp, "    push rbp\n");
             fprintf(fp, "    mov rbp, rsp\n");
             if (sym->offset > 0)
-                fprintf(fp, "    sub rbp, %d\n", sym->offset + 8); /*TODO 8?*/
+                fprintf(fp, "    sub rbp, %d\n", sym->offset + 28);
             if (!compile_node(fp, sym->body_node))
                 return false;
             fprintf(fp, "    mov rsp, rbp\n");

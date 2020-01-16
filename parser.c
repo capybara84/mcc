@@ -259,14 +259,15 @@ static NODE *parse_argument_expression_list(PARSER *pars)
 {
     NODE *np;
     POS pos;
+    int n_arg = 0;
 
     ENTER("parse_argument_expression_list");
     pos = copy_pos(pars);
-    np = link_node(NK_ARG, &pos, parse_assignment_expression(pars), NULL);
+    np = link_arg_node(n_arg++, &pos, parse_assignment_expression(pars), NULL);
     while (pars->token == TK_COMMA) {
         POS pos = copy_pos(pars);
         next(pars);
-        np = link_node(NK_ARG, &pos,
+        np = link_arg_node(n_arg++, &pos,
                         parse_assignment_expression(pars), np);
     }
     LEAVE("parse_argument_expression_list");
@@ -1115,7 +1116,7 @@ static bool parse_external_delaration(PARSER *pars)
     } else if (pars->token == TK_BEGIN) {
         NODE *body;
         PARAM *p;
-        int offset;
+        int offset, num;
         if (symkind != SK_FUNC)
             parser_error(pars, "invalid function syntax");
         if (sym) {
@@ -1125,8 +1126,11 @@ static bool parse_external_delaration(PARSER *pars)
             sym = new_symbol(SK_FUNC, VK_UNKNOWN, sc, id, typ, 0);
         sym->tab = enter_function(sym);
         offset = 0;
+        num = 0;
         for (p = param_list; p != NULL; p = p->next) {
-            new_symbol(SK_VAR, VK_PARAM, SC_DEFAULT, p->id, p->type, offset);
+            SYMBOL *sym = new_symbol(SK_VAR, VK_PARAM, SC_DEFAULT,
+                                        p->id, p->type, offset);
+            sym->num = num++;
             offset += type_size(p->type);
             if (is_debug("parser")) {
                 printf("param id:%s type:", p->id);

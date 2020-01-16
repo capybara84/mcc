@@ -102,6 +102,7 @@ struct symbol {
     NODE *body_node;
     SYMTAB *tab;
     int offset;
+    int num;
 };
 
 struct symtab {
@@ -188,6 +189,11 @@ struct node {
         } comp;
         SYMBOL *sym;
         int num;
+        struct {
+            NODE *left;
+            NODE *right;
+            int num;
+        } arg;
     } u;
 };
 
@@ -200,6 +206,7 @@ NODE *new_node3(NODE_KIND kind, const POS *pos, TYPE *typ,
 NODE *new_node4(NODE_KIND kind, const POS *pos, TYPE *typ,
                     NODE *n1, NODE *n2, NODE *n3, NODE *n4);
 NODE *link_node(NODE_KIND kind, const POS *pos, NODE *node, NODE *top);
+NODE *link_arg_node(int num, const POS *pos, NODE *node, NODE *top);
 NODE *new_node_sym(NODE_KIND kind, const POS *pos, SYMBOL *sym);
 NODE *new_node_int(NODE_KIND kind, const POS *pos, int num);
 const char *node_kind_to_str(NODE_KIND kind);

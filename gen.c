@@ -1,7 +1,11 @@
 #include <assert.h>
+#include <string.h>
 #include "mcc.h"
 
 static int s_label_number = 0;
+static const char *s_arg_reg32[] = {
+    "edi", "esi", "edx", "ecx", "r8d", "r9d",
+};
 
 int new_label(void)
 {
@@ -24,7 +28,10 @@ const char *var_addr(const SYMBOL *sym)
         sprintf(buf, "[rbp-%d]", sym->offset + 8);
         break;
     case VK_PARAM:
-        sprintf(buf, "[rbp+%d]", sym->offset + 16);
+        if (sym->num < 6)
+            strcpy(buf, s_arg_reg32[sym->num]);
+        else
+            sprintf(buf, "[rbp+%d]", sym->offset + 16 - 6 * 4);
         break;
     default:
         buf[0] = '\0';
@@ -153,6 +160,7 @@ bool compile_node(FILE *fp, const NODE *np)
         fprintf(fp, "    pop rdi\n");
         switch (np->kind) {
         case NK_ADD:
+            /*TODO bit */
             fprintf(fp, "    add rax, rdi\n");
             break;
         case NK_SUB:
@@ -247,9 +255,15 @@ bool compile_node(FILE *fp, const NODE *np)
         }
         break;
     case NK_ARG:
-        compile_node(fp, np->u.comp.right);
-        compile_node(fp, np->u.comp.left);
-        fprintf(fp, "    push eax\n");
+        compile_node(fp, np->u.arg.right);
+        compile_node(fp, np->u.arg.left);
+        if (np->u.arg.num > 5) {
+            /*TODO bit */
+            fprintf(fp, "    push eax\n");
+        } else {
+            /*TODO bit */
+            fprintf(fp, "    mov %s,eax\n", s_arg_reg32[np->u.arg.num]);
+        }
         break;
     }
 
@@ -267,15 +281,13 @@ bool compile_symbol(FILE *fp, const SYMBOL *sym)
             int buf_size;
             fprintf(fp, "    push rbp\n");
             fprintf(fp, "    mov rbp, rsp\n");
-            buf_size = calc_arg_size(sym) * 8;
+            buf_size = calc_arg_size(sym) * 4;
             fprintf(fp, "    sub rbp, %d\n", sym->offset + buf_size + 8);
             if (buf_size > 0) {
-                char *reg[] = {
-                    "rdi", "rsi", "rdx", "rcx", "r8", "r9",
-                };
                 int i;
                 for (i = 0; i < 6; i++) /*TODO*/
-                    fprintf(fp, "    mov [rbp-%d],%s\n", (i+1)*8, reg[i]);
+                    fprintf(fp, "    mov [rbp-%d],%s\n",
+                                        (i+1)*4, s_arg_reg32[i]); /*TODO bit*/
             }
             if (!compile_node(fp, sym->body_node))
                 return false;

@@ -278,6 +278,7 @@ new_symbol(SYMBOL_KIND kind, VAR_KIND var_kind, STORAGE_CLASS sc, const char *id
     p->body_node = NULL;
     p->tab = NULL;
     p->offset = offset;
+    p->num = 0;
     return p;
 }
 

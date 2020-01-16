@@ -63,6 +63,23 @@ NODE *link_node(NODE_KIND kind, const POS *pos, NODE *node, NODE *top)
     return top;
 }
 
+NODE *link_arg_node(int num, const POS *pos, NODE *node, NODE *top)
+{
+    NODE *np;
+    NODE *p;
+
+    np = new_node(NK_ARG, pos, NULL);
+    np->u.arg.left = node;
+    np->u.arg.right = NULL;
+    np->u.arg.num = num;
+    if (top == NULL)
+        return np;
+    for (p = top; p->u.arg.right != NULL; p = p->u.arg.right)
+        ;
+    p->u.arg.right = np;
+    return top;
+}
+
 NODE *new_node_sym(NODE_KIND kind, const POS *pos, SYMBOL *sym)
 {
     NODE *np;
@@ -263,13 +280,14 @@ void fprint_node(FILE *fp, int indent, const NODE *np)
         }
         break;
     case NK_ARG:
-        fprintf(fp, "(");
-        fprint_node(fp, 0, np->u.comp.left);
-        if (np->u.comp.right) {
+        /*fprintf(fp, "(");*/
+        fprint_node(fp, 0, np->u.arg.left);
+        /*fprintf(fp, ":%d", np->u.arg.num);*/
+        if (np->u.arg.right) {
             fprintf(fp, ", ");
-            fprint_node(fp, 0, np->u.comp.right);
+            fprint_node(fp, 0, np->u.arg.right);
         }
-        fprintf(fp, ")");
+        /*fprintf(fp, ")");*/
         break;
     }
 }

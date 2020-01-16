@@ -264,12 +264,12 @@ void fprint_node(FILE *fp, int indent, const NODE *np)
         break;
     case NK_ARG:
         fprintf(fp, "(");
-        fprint_node(fp, 0, np->u.link.n1);
-        if (np->u.link.n2) {
+        fprint_node(fp, 0, np->u.comp.left);
+        if (np->u.comp.right) {
             fprintf(fp, ", ");
-            fprint_node(fp, 0, np->u.link.n2);
-            fprintf(fp, ")");
+            fprint_node(fp, 0, np->u.comp.right);
         }
+        fprintf(fp, ")");
         break;
     }
 }

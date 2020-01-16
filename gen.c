@@ -247,9 +247,9 @@ bool compile_node(FILE *fp, const NODE *np)
         }
         break;
     case NK_ARG:
-        compile_node(fp, np->u.link.n1);
+        compile_node(fp, np->u.comp.right);
+        compile_node(fp, np->u.comp.left);
         fprintf(fp, "    push eax\n");
-        compile_node(fp, np->u.link.n2);
         break;
     }
 

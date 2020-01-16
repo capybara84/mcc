@@ -258,13 +258,16 @@ argument_expression_list
 static NODE *parse_argument_expression_list(PARSER *pars)
 {
     NODE *np;
+    POS pos;
+
     ENTER("parse_argument_expression_list");
-    np = parse_assignment_expression(pars);
+    pos = copy_pos(pars);
+    np = link_node(NK_ARG, &pos, parse_assignment_expression(pars), NULL);
     while (pars->token == TK_COMMA) {
         POS pos = copy_pos(pars);
         next(pars);
-        np = new_node2(NK_ARG, &pos, NULL,
-                        np, parse_assignment_expression(pars));
+        np = link_node(NK_ARG, &pos,
+                        parse_assignment_expression(pars), np);
     }
     LEAVE("parse_argument_expression_list");
     return np;

@@ -430,9 +430,18 @@ void print_global_symtab(void)
     print_symtab(global_table);
 }
 
-int calc_arg_size(const SYMBOL *sym)
+int calc_arg_num(const SYMBOL *sym)
 {
-    return 6;   /*TODO*/
+    const SYMBOL *sp;
+    int n_arg = 0;
+    assert(sym && sym->kind == SK_FUNC);
+    for (sp = sym->tab->sym; sp != NULL; sp = sp->next) {
+        if (sp->kind == SK_VAR && sp->var_kind == VK_PARAM) {
+            if (n_arg < sp->num)
+                n_arg = sp->num;
+        }
+    }
+    return n_arg+1;
 }
 
 bool compile_symtab(FILE *fp, const SYMTAB *tab)

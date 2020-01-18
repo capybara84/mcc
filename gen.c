@@ -278,14 +278,17 @@ bool compile_symbol(FILE *fp, const SYMBOL *sym)
         if (sym->sclass != SC_EXTERN)
             fprintf(fp, "%s:\n", sym->id);
         if (sym->has_body) {
+            int arg_num;
             int buf_size;
+            arg_num = calc_arg_num(sym);
+            fprintf(fp, "; arg_num = %d\n", arg_num);
+            buf_size = (arg_num > 6 ? 6 : arg_num) * 4;
             fprintf(fp, "    push rbp\n");
             fprintf(fp, "    mov rbp, rsp\n");
-            buf_size = calc_arg_size(sym) * 4;
             fprintf(fp, "    sub rbp, %d\n", sym->offset + buf_size + 8);
             if (buf_size > 0) {
                 int i;
-                for (i = 0; i < 6; i++) /*TODO*/
+                for (i = 0; i < (arg_num > 6 ? 6 : arg_num); i++)
                     fprintf(fp, "    mov [rbp-%d],%s\n",
                                         (i+1)*4, s_arg_reg32[i]); /*TODO bit*/
             }

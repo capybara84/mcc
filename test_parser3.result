@@ -2,11 +2,11 @@ test_parser3.c(10):warning:incompatible pointer types
 test_parser3.c(11):warning:incompatible pointer types
 test_parser3.c(16):warning:incompatible pointer types
 test_parser3.c(19):warning:incompatible pointer types
-SYM foo FUNC(3) DEFAULT:FUNC <void> ()
+SYM foo FUNC UNKNOWN(24) DEFAULT:FUNC <void> ()
   local tab
-  SYM q VAR(3) DEFAULT:POINTER to int
-  SYM p VAR(2) DEFAULT:POINTER to int
-  SYM pf VAR(1) DEFAULT:POINTER to FUNC <void> ()
+  SYM q VAR LOCAL(16) DEFAULT:POINTER to int
+  SYM p VAR LOCAL(8) DEFAULT:POINTER to int
+  SYM pf VAR LOCAL(0) DEFAULT:POINTER to FUNC <void> ()
   {
     (p = q);
     (p = bar);
@@ -17,4 +17,4 @@ SYM foo FUNC(3) DEFAULT:FUNC <void> ()
     (p = 0);
     (p = 1);
   }
-SYM bar FUNC(0) DEFAULT:FUNC <void> ()
+SYM bar FUNC UNKNOWN(0) DEFAULT:FUNC <void> ()

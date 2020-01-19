@@ -233,9 +233,35 @@ void print_type(const TYPE *typ)
     fprint_type(stdout, typ);
 }
 
+/* LP64 */
+int type_size(const TYPE *typ)
+{
+    if (typ == NULL)
+        return 0;
+    switch (typ->kind) {
+    case T_UNKNOWN:
+        assert(0);
+        break;
+    case T_VOID:
+        assert(0);
+        break;
+    case T_NULL:
+        return 8;
+    case T_INT:
+        return 4;
+    case T_POINTER:
+        return 8;
+    case T_FUNC:
+        return 8;
+    }
+    return 0;
+}
+
+
+
 SYMBOL *
-new_symbol(SYMBOL_KIND kind, STORAGE_CLASS sc, const char *id,
-            TYPE *type, int var_num)
+new_symbol(SYMBOL_KIND kind, VAR_KIND var_kind, STORAGE_CLASS sc, const char *id,
+            TYPE *type, int offset)
 {
     SYMBOL *p;
 
@@ -245,17 +271,14 @@ new_symbol(SYMBOL_KIND kind, STORAGE_CLASS sc, const char *id,
     current_symtab->sym = p;
     p->sclass = sc;
     p->kind = kind;
+    p->var_kind = var_kind;
     p->id = id;
     p->type = type;
     p->has_body = false;
     p->body_node = NULL;
     p->tab = NULL;
-    p->var_num = var_num;
-    if (var_num > 0) {
-        assert(current_function);
-        current_function->var_num = var_num;
-    }
-
+    p->offset = offset;
+    p->num = 0;
     return p;
 }
 
@@ -316,10 +339,16 @@ void leave_function(void)
     current_function = NULL;
 }
 
-int get_func_var_num(void)
+int get_func_local_var_size(void)
 {
     assert(current_function);
-    return current_function->var_num;
+    return current_function->offset;
+}
+
+void set_func_local_var_size(int size)
+{
+    assert(current_function);
+    current_function->offset = size;
 }
 
 bool init_symtab(void)
@@ -352,11 +381,23 @@ static const char *get_kind_string(SYMBOL_KIND kind)
     return NULL;
 }
 
+static const char *get_var_kind_string(VAR_KIND var_kind)
+{
+    switch (var_kind) {
+    case VK_UNKNOWN:    return "UNKNOWN";
+    case VK_GLOBAL:     return "GLOBAL";
+    case VK_LOCAL:      return "LOCAL";
+    case VK_PARAM:      return "PARAM";
+    }
+    return NULL;
+}
+
 void fprint_symbol(FILE *fp, int indent, const SYMBOL *sym)
 {
-    fprintf(fp, "%*sSYM %s %s(%d) %s:", indent, "",
+    fprintf(fp, "%*sSYM %s %s %s(%d) %s:", indent, "",
         sym->id, get_kind_string(sym->kind),
-        sym->var_num, get_storage_class_string(sym->sclass));
+        get_var_kind_string(sym->var_kind),
+        sym->offset, get_storage_class_string(sym->sclass));
     fprint_type(fp, sym->type);
     fprintf(fp, "\n");
     if (sym->kind == SK_FUNC && sym->has_body) {
@@ -389,6 +430,19 @@ void print_global_symtab(void)
     print_symtab(global_table);
 }
 
+int calc_arg_num(const SYMBOL *sym)
+{
+    const SYMBOL *sp;
+    int n_arg = 0;
+    assert(sym && sym->kind == SK_FUNC);
+    for (sp = sym->tab->sym; sp != NULL; sp = sp->next) {
+        if (sp->kind == SK_VAR && sp->var_kind == VK_PARAM) {
+            if (n_arg < sp->num)
+                n_arg = sp->num;
+        }
+    }
+    return n_arg+1;
+}
 
 bool compile_symtab(FILE *fp, const SYMTAB *tab)
 {

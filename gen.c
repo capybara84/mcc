@@ -1,7 +1,11 @@
 #include <assert.h>
+#include <string.h>
 #include "mcc.h"
 
 static int s_label_number = 0;
+static const char *s_arg_reg32[] = {
+    "edi", "esi", "edx", "ecx", "r8d", "r9d",
+};
 
 int new_label(void)
 {
@@ -13,16 +17,51 @@ void gen_header(FILE *fp)
     fprintf(fp, ".intel_syntax noprefix\n");
 }
 
-void gen_lval(FILE *fp, const NODE *np)
+const char *var_addr(const SYMBOL *sym)
 {
-    assert(np->kind == NK_ID);
+    static char buf[128];
+    switch (sym->var_kind) {
+    case VK_GLOBAL:
+        sprintf(buf, "%s", sym->id);
+        break;
+    case VK_LOCAL:
+        sprintf(buf, "[rbp-%d]", sym->offset + 8);
+        break;
+    case VK_PARAM:
+        if (sym->num < 6)
+            strcpy(buf, s_arg_reg32[sym->num]);
+        else
+            sprintf(buf, "[rbp+%d]", sym->offset + 16 - 6 * 4);
+        break;
+    default:
+        buf[0] = '\0';
+        break;
+    }
+    return buf;
+}
+
+void gen_get_var(FILE *fp, const NODE *np)
+{
+    SYMBOL *sym;
     if (np->kind != NK_ID)
-        error(&np->pos, "invalid left value (not variable)");
-    assert(np->u.sym);
-    fprintf(fp, "    mov rax, rbp\n");
-    fprintf(fp, "    sub rax, %d   ; %s\n", np->u.sym->var_num * 8,
-                    np->u.sym->id);
-    fprintf(fp, "    push rax\n");
+        error(&np->pos, "not variable");
+    sym = np->u.sym;
+    assert(sym);
+    if (sym->var_kind == VK_UNKNOWN)
+        error(&np->pos, "invalid variable");
+    fprintf(fp, "    mov eax,%s ; %s\n", var_addr(sym), sym->id);
+}
+
+void gen_set_var(FILE *fp, const NODE *np)
+{
+    SYMBOL *sym;
+    if (np->kind != NK_ID)
+        error(&np->pos, "not variable");
+    sym = np->u.sym;
+    assert(sym);
+    if (sym->var_kind == VK_UNKNOWN)
+        error(&np->pos, "invalid variable");
+    fprintf(fp, "    mov %s,eax ; %s\n", var_addr(sym), sym->id);
 }
 
 bool compile_node(FILE *fp, const NODE *np)
@@ -45,7 +84,6 @@ bool compile_node(FILE *fp, const NODE *np)
     case NK_IF:
         fprintf(fp, "; %s(%d) IF\n", np->pos.filename, np->pos.line);
         compile_node(fp, np->u.link.n1);
-        fprintf(fp, "    pop rax\n");
         fprintf(fp, "    cmp rax, 0\n");
         label1 = new_label();
         fprintf(fp, "    je .L%d\n", label1);
@@ -63,7 +101,6 @@ bool compile_node(FILE *fp, const NODE *np)
         label1 = new_label();
         fprintf(fp, ".L%d:\n", label1);
         compile_node(fp, np->u.link.n1);
-        fprintf(fp, "    pop rax\n");
         fprintf(fp, "    cmp rax, 0\n");
         label2 = new_label();
         fprintf(fp, "    je .L%d\n", label2);
@@ -77,7 +114,6 @@ bool compile_node(FILE *fp, const NODE *np)
         label1 = new_label();
         fprintf(fp, ".L%d:\n", label1);
         compile_node(fp, np->u.link.n2);
-        fprintf(fp, "    pop rax\n");
         fprintf(fp, "    cmp rax, 0\n");
         label2 = new_label();
         fprintf(fp, "    je .L%d\n", label2);
@@ -98,7 +134,6 @@ bool compile_node(FILE *fp, const NODE *np)
         fprintf(fp, "; %s(%d) RETURN\n", np->pos.filename, np->pos.line);
         if (np->u.link.n1) {
             compile_node(fp, np->u.link.n1);
-            fprintf(fp, "    pop rax\n");
             fprintf(fp, "    mov rsp, rbp\n");
             fprintf(fp, "    pop rbp\n");
             fprintf(fp, "    ret\n");
@@ -119,12 +154,13 @@ bool compile_node(FILE *fp, const NODE *np)
     case NK_GT:
     case NK_LE:
     case NK_GE:
-        compile_node(fp, np->u.link.n1);
         compile_node(fp, np->u.link.n2);
+        fprintf(fp, "    push rax\n");
+        compile_node(fp, np->u.link.n1);
         fprintf(fp, "    pop rdi\n");
-        fprintf(fp, "    pop rax\n");
         switch (np->kind) {
         case NK_ADD:
+            /*TODO bit */
             fprintf(fp, "    add rax, rdi\n");
             break;
         case NK_SUB:
@@ -169,15 +205,10 @@ bool compile_node(FILE *fp, const NODE *np)
             break;
         default: assert(0);
         }
-        fprintf(fp, "    push rax\n");
         break;
     case NK_ASSIGN:
-        gen_lval(fp, np->u.link.n1);
         compile_node(fp, np->u.link.n2);
-        fprintf(fp, "    pop rdi\n");
-        fprintf(fp, "    pop rax\n");
-        fprintf(fp, "    mov [rax], rdi\n");
-        fprintf(fp, "    push rdi\n");
+        gen_set_var(fp, np->u.link.n1);
         break;
     case NK_LOR:
         /*TODO*/
@@ -205,39 +236,34 @@ bool compile_node(FILE *fp, const NODE *np)
     case NK_ID:
         assert(np->u.sym);
         if (np->u.sym->kind == SK_VAR) {
-            if (np->u.sym->var_num != 0) {
-                gen_lval(fp, np);
-                fprintf(fp, "    pop rax\n");
-                fprintf(fp, "    mov rax, [rax]\n");
-                fprintf(fp, "    push rax\n");
-            } else {
-                /* TODO global var */
-            }
+            gen_get_var(fp, np);
         } else {
             fprintf(fp, ";FUNC %s\n", np->u.sym->id);
             /*TODO*/
+            assert(0);
         }
         break;
     case NK_INT_LIT:
-        fprintf(fp, "    push %d\n", np->u.num);
+        fprintf(fp, "    mov eax,%d\n", np->u.num);
         break;
     case NK_CALL:
-        /*TODO*/
-        /*
-        compile_node(fp, np->u.link.n1);
-        fprintf(fp, "(");
         compile_node(fp, np->u.link.n2);
-        fprintf(fp, ")");
-        */
+        if (np->u.link.n1->kind == NK_ID) {
+            fprintf(fp, "    call %s\n", np->u.link.n1->u.sym->id);
+        } else {
+            /*TODO*/
+        }
         break;
     case NK_ARG:
-        /* TODO
-        compile_node(fp, np->u.link.n1);
-        if (np->u.link.n2) {
-            fprintf(fp, ", ");
-            compile_node(fp, np->u.link.n2);
+        compile_node(fp, np->u.arg.right);
+        compile_node(fp, np->u.arg.left);
+        if (np->u.arg.num > 5) {
+            /*TODO bit */
+            fprintf(fp, "    push eax\n");
+        } else {
+            /*TODO bit */
+            fprintf(fp, "    mov %s,eax\n", s_arg_reg32[np->u.arg.num]);
         }
-        */
         break;
     }
 
@@ -252,10 +278,20 @@ bool compile_symbol(FILE *fp, const SYMBOL *sym)
         if (sym->sclass != SC_EXTERN)
             fprintf(fp, "%s:\n", sym->id);
         if (sym->has_body) {
+            int arg_num;
+            int buf_size;
+            arg_num = calc_arg_num(sym);
+            fprintf(fp, "; arg_num = %d\n", arg_num);
+            buf_size = (arg_num > 6 ? 6 : arg_num) * 4;
             fprintf(fp, "    push rbp\n");
             fprintf(fp, "    mov rbp, rsp\n");
-            if (sym->var_num > 0)
-                fprintf(fp, "    sub rbp, %d\n", sym->var_num * 8);
+            fprintf(fp, "    sub rbp, %d\n", sym->offset + buf_size + 8);
+            if (buf_size > 0) {
+                int i;
+                for (i = 0; i < (arg_num > 6 ? 6 : arg_num); i++)
+                    fprintf(fp, "    mov [rbp-%d],%s\n",
+                                        (i+1)*4, s_arg_reg32[i]); /*TODO bit*/
+            }
             if (!compile_node(fp, sym->body_node))
                 return false;
             fprintf(fp, "    mov rsp, rbp\n");
